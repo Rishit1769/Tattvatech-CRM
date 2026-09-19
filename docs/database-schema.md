@@ -1,6 +1,6 @@
 # Database Schema
 
-This is the conceptual Version 1 MySQL schema. Exact column types and migration syntax may evolve, but names, ownership, relationships, and lifecycle rules should remain coherent.
+This is the conceptual Version 1 MySQL schema represented by `prisma/schema.prisma`. Exact migration details may evolve, but names, ownership, relationships, and lifecycle rules should remain coherent.
 
 ## Conventions
 
@@ -98,4 +98,4 @@ Invoices store seller and buyer billing snapshots at generation time. Later chan
 
 ## Migrations and seed data
 
-All schema changes are version-controlled migrations. Development seed data may include four sample users, roles, permissions, and representative CRM/project/finance records. Never seed fake production finance data into a live database, and keep demo data isolated from live CRM data.
+All schema changes are version-controlled Prisma schema/migration changes. Development seed data may include four sample users, roles, permissions, and representative CRM/project/finance records. Never seed fake production finance data into a live database, and keep demo data isolated from live CRM data.

@@ -1,0 +1,579 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+enum LeadStage {
+  NEW
+  CONTACTED
+  MEETING_SCHEDULED
+  MEETING_DONE
+  PROPOSAL_REQUIRED
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+}
+enum LeadPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+enum MeetingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  BLOCKED
+  WAITING_CLIENT
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  REVIEW
+  BLOCKED
+  DONE
+  CANCELLED
+}
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+enum TransactionType {
+  PAYMENT_RECEIVED
+  EXPENSE
+  REFUND
+  TRANSFER
+  OTHER_INCOME
+  OTHER
+}
+enum TransactionStatus {
+  RECORDED
+  VERIFIED
+  VOID
+}
+enum InvoiceStatus {
+  GENERATED
+  SENT
+  PAID
+  PARTIALLY_PAID
+  VOID
+}
+enum AmcStatus {
+  ACTIVE
+  DUE_SOON
+  OVERDUE
+  PAUSED
+  ENDED
+}
+enum DemoStatus {
+  REQUESTED
+  STARTING
+  RUNNING
+  STOPPING
+  STOPPED
+  FAILED
+  EXPIRED
+}
+enum ServiceStatus {
+  HEALTHY
+  DEGRADED
+  DOWN
+  UNKNOWN
+  STOPPED
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Char(36)
+  name        String           @unique @db.VarChar(80)
+  description String?          @db.VarChar(255)
+  isSystem    Boolean          @default(false) @map("is_system")
+  users       User[]
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Char(36)
+  key         String           @unique @map("permission_key") @db.VarChar(120)
+  description String?          @db.VarChar(255)
+  roles       RolePermission[]
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Char(36)
+  permissionId String     @map("permission_id") @db.Char(36)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id             String         @id @default(uuid()) @db.Char(36)
+  fullName       String         @map("full_name") @db.VarChar(160)
+  email          String         @unique @db.VarChar(320)
+  passwordHash   String         @map("password_hash") @db.VarChar(255)
+  roleId         String         @map("role_id") @db.Char(36)
+  status         UserStatus     @default(INVITED)
+  lastLoginAt   DateTime?      @map("last_login_at")
+  disabledAt    DateTime?      @map("disabled_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  role          Role           @relation(fields: [roleId], references: [id])
+  sessions      Session[]
+  activities    Activity[]
+  audits        AuditLog[]
+  notifications Notification[]
+  ownedLeads    Lead[]         @relation("LeadOwner")
+  createdLeads  Lead[]         @relation("LeadCreator")
+  createdAtMeetings Meeting[]  @relation("MeetingCreator")
+  @@index([roleId])
+  @@index([status])
+  @@map("users")
+}
+
+model Session {
+  id               String    @id @default(uuid()) @db.Char(36)
+  userId           String    @map("user_id") @db.Char(36)
+  sessionTokenHash String    @unique @map("session_token_hash") @db.Char(64)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  lastSeenAt       DateTime? @map("last_seen_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Lead {
+  id                  String             @id @default(uuid()) @db.Char(36)
+  organizationName    String             @map("organization_name") @db.VarChar(200)
+  primaryContactName  String             @map("primary_contact_name") @db.VarChar(160)
+  primaryContactRole  String?            @map("primary_contact_role") @db.VarChar(120)
+  phone               String?            @db.VarChar(40)
+  email               String?            @db.VarChar(320)
+  website             String?            @db.VarChar(320)
+  source              String?            @db.VarChar(80)
+  interest            String?            @db.VarChar(120)
+  expectedValue       Decimal?           @map("expected_value") @db.Decimal(15, 2)
+  currency            String             @default("INR") @db.Char(3)
+  stage               LeadStage          @default(NEW)
+  priority            LeadPriority       @default(MEDIUM)
+  ownerUserId         String?            @map("owner_user_id") @db.Char(36)
+  nextFollowUpAt      DateTime?          @map("next_follow_up_at")
+  summary             String?            @db.Text
+  lostReason          String?            @map("lost_reason") @db.Text
+  wonAt               DateTime?          @map("won_at")
+  createdById         String?            @map("created_by") @db.Char(36)
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+  archivedAt          DateTime?          @map("archived_at")
+  owner               User?              @relation("LeadOwner", fields: [ownerUserId], references: [id])
+  createdBy           User?              @relation("LeadCreator", fields: [createdById], references: [id])
+  stageHistory        LeadStageHistory[]
+  meetings            Meeting[]
+  followUps           FollowUp[]
+  proposals           Proposal[]
+  contacts            Contact[]
+  clients             Client[]
+  projects            Project[]
+  @@index([stage])
+  @@index([ownerUserId])
+  @@index([nextFollowUpAt])
+  @@map("leads")
+}
+
+model LeadStageHistory {
+  id        String    @id @default(uuid()) @db.Char(36)
+  leadId    String    @map("lead_id") @db.Char(36)
+  fromStage LeadStage? @map("from_stage")
+  toStage   LeadStage  @map("to_stage")
+  changedBy String?    @map("changed_by") @db.Char(36)
+  note      String?    @db.Text
+  createdAt DateTime   @default(now()) @map("created_at")
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  @@index([leadId, createdAt])
+  @@map("lead_stage_history")
+}
+
+model Client {
+  id                String        @id @default(uuid()) @db.Char(36)
+  clientCode        String        @unique @map("client_code") @db.VarChar(60)
+  name              String        @db.VarChar(200)
+  email             String?       @db.VarChar(320)
+  phone             String?       @db.VarChar(40)
+  website           String?       @db.VarChar(320)
+  industry          String?       @db.VarChar(120)
+  address           String?       @db.Text
+  status            String        @default("ACTIVE") @db.VarChar(30)
+  accountOwnerId    String?       @map("account_owner_user_id") @db.Char(36)
+  originatingLeadId String?       @map("originating_lead_id") @db.Char(36)
+  notes             String?       @db.Text
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  archivedAt        DateTime?     @map("archived_at")
+  originatingLead   Lead?         @relation(fields: [originatingLeadId], references: [id])
+  contacts          Contact[]
+  meetings          Meeting[]
+  followUps         FollowUp[]
+  proposals         Proposal[]
+  projects          Project[]
+  transactions      Transaction[]
+  invoices          Invoice[]
+  amcs              AmcContract[]
+  @@index([name])
+  @@map("clients")
+}
+
+model Contact {
+  id               String   @id @default(uuid()) @db.Char(36)
+  clientId         String   @map("client_id") @db.Char(36)
+  leadId           String?  @map("lead_id") @db.Char(36)
+  name             String   @db.VarChar(160)
+  role             String?  @db.VarChar(120)
+  email            String?  @db.VarChar(320)
+  phone            String?  @db.VarChar(40)
+  whatsapp         String?  @db.VarChar(40)
+  isPrimary        Boolean  @default(false) @map("is_primary")
+  isFinanceContact Boolean  @default(false) @map("is_finance_contact")
+  isTechnicalContact Boolean @default(false) @map("is_technical_contact")
+  notes            String?  @db.Text
+  client           Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lead             Lead?    @relation(fields: [leadId], references: [id])
+  @@index([clientId])
+  @@map("contacts")
+}
+
+model Meeting {
+  id                String        @id @default(uuid()) @db.Char(36)
+  title             String        @db.VarChar(200)
+  meetingType       String        @map("meeting_type") @db.VarChar(80)
+  leadId            String?       @map("lead_id") @db.Char(36)
+  clientId          String?       @map("client_id") @db.Char(36)
+  projectId         String?       @map("project_id") @db.Char(36)
+  scheduledStart    DateTime      @map("scheduled_start")
+  scheduledEnd      DateTime?     @map("scheduled_end")
+  mode              String?       @db.VarChar(40)
+  locationOrUrl     String?       @map("location_or_url") @db.VarChar(500)
+  agenda            String?       @db.Text
+  status            MeetingStatus @default(SCHEDULED)
+  organizerUserId   String?       @map("organizer_user_id") @db.Char(36)
+  summary           String?       @db.Text
+  requirements      String?       @db.Text
+  decisions         String?       @db.Text
+  nextAction        String?       @map("next_action") @db.Text
+  nextActionOwnerId String?       @map("next_action_owner_id") @db.Char(36)
+  nextActionDueAt   DateTime?     @map("next_action_due_at")
+  createdById       String?       @map("created_by") @db.Char(36)
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  completedAt       DateTime?     @map("completed_at")
+  lead              Lead?         @relation(fields: [leadId], references: [id])
+  client            Client?       @relation(fields: [clientId], references: [id])
+  project           Project?      @relation(fields: [projectId], references: [id])
+  createdBy         User?         @relation("MeetingCreator", fields: [createdById], references: [id])
+  @@index([scheduledStart])
+  @@map("meetings")
+}
+
+model FollowUp {
+  id           String   @id @default(uuid()) @db.Char(36)
+  leadId       String?  @map("lead_id") @db.Char(36)
+  clientId     String?  @map("client_id") @db.Char(36)
+  projectId    String?  @map("project_id") @db.Char(36)
+  meetingId    String?  @map("meeting_id") @db.Char(36)
+  title        String   @db.VarChar(200)
+  description  String?  @db.Text
+  assignedUserId String? @map("assigned_user_id") @db.Char(36)
+  dueAt        DateTime @map("due_at")
+  status       String   @default("OPEN") @db.VarChar(30)
+  priority     TaskPriority @default(MEDIUM)
+  completionNote String? @map("completion_note") @db.Text
+  createdById  String?  @map("created_by") @db.Char(36)
+  createdAt    DateTime @default(now()) @map("created_at")
+  completedAt  DateTime? @map("completed_at")
+  lead         Lead?    @relation(fields: [leadId], references: [id])
+  client       Client?  @relation(fields: [clientId], references: [id])
+  project      Project? @relation(fields: [projectId], references: [id])
+  @@index([dueAt, status])
+  @@map("follow_ups")
+}
+
+model Proposal {
+  id              String   @id @default(uuid()) @db.Char(36)
+  proposalNumber  String   @map("proposal_number") @db.VarChar(80)
+  version         Int      @default(1)
+  title           String   @db.VarChar(200)
+  leadId          String?  @map("lead_id") @db.Char(36)
+  clientId        String?  @map("client_id") @db.Char(36)
+  projectId       String?  @map("project_id") @db.Char(36)
+  amount          Decimal? @db.Decimal(15, 2)
+  currency        String   @default("INR") @db.Char(3)
+  status          String   @default("DRAFT") @db.VarChar(30)
+  fileId          String?  @map("file_id") @db.Char(36)
+  createdById     String?  @map("created_by") @db.Char(36)
+  createdAt       DateTime @default(now()) @map("created_at")
+  sentAt          DateTime? @map("sent_at")
+  acceptedAt      DateTime? @map("accepted_at")
+  rejectedAt      DateTime? @map("rejected_at")
+  expiresAt       DateTime? @map("expires_at")
+  lead            Lead?    @relation(fields: [leadId], references: [id])
+  client          Client?  @relation(fields: [clientId], references: [id])
+  project         Project? @relation(fields: [projectId], references: [id])
+  @@index([proposalNumber])
+  @@map("proposals")
+}
+
+model Project {
+  id                    String        @id @default(uuid()) @db.Char(36)
+  projectCode           String        @unique @map("project_code") @db.VarChar(80)
+  clientId              String        @map("client_id") @db.Char(36)
+  originatingLeadId     String?       @map("originating_lead_id") @db.Char(36)
+  name                  String        @db.VarChar(200)
+  type                  String?       @db.VarChar(100)
+  description           String?       @db.Text
+  status                ProjectStatus @default(PLANNING)
+  priority              TaskPriority  @default(MEDIUM)
+  projectOwnerUserId    String?       @map("project_owner_user_id") @db.Char(36)
+  technicalOwnerUserId  String?       @map("technical_owner_user_id") @db.Char(36)
+  startDate             DateTime?     @map("start_date") @db.Date
+  expectedDeliveryDate  DateTime?     @map("expected_delivery_date") @db.Date
+  completedAt           DateTime?     @map("completed_at")
+  dealValue             Decimal?      @map("deal_value") @db.Decimal(15, 2)
+  currency              String        @default("INR") @db.Char(3)
+  paymentStructureNotes String?       @map("payment_structure_notes") @db.Text
+  repositoryUrl         String?       @map("repository_url") @db.VarChar(500)
+  deploymentNotes       String?       @map("deployment_notes") @db.Text
+  createdById           String?       @map("created_by") @db.Char(36)
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+  archivedAt            DateTime?     @map("archived_at")
+  client                Client        @relation(fields: [clientId], references: [id])
+  originatingLead       Lead?         @relation(fields: [originatingLeadId], references: [id])
+  meetings              Meeting[]
+  followUps            FollowUp[]
+  proposals             Proposal[]
+  tasks                 Task[]
+  milestones            Milestone[]
+  transactions          Transaction[]
+  invoices              Invoice[]
+  amcs                  AmcContract[]
+  @@index([clientId, status])
+  @@map("projects")
+}
+
+model Task {
+  id             String       @id @default(uuid()) @db.Char(36)
+  projectId      String       @map("project_id") @db.Char(36)
+  title          String       @db.VarChar(200)
+  description    String?      @db.Text
+  assignedUserId String?      @map("assigned_user_id") @db.Char(36)
+  createdById    String?      @map("created_by") @db.Char(36)
+  status         TaskStatus   @default(TODO)
+  priority       TaskPriority @default(MEDIUM)
+  dueAt          DateTime?    @map("due_at")
+  completedAt    DateTime?    @map("completed_at")
+  completionNote String?      @map("completion_note") @db.Text
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@index([projectId, status])
+  @@map("tasks")
+}
+
+model Milestone {
+  id               String      @id @default(uuid()) @db.Char(36)
+  projectId        String      @map("project_id") @db.Char(36)
+  title            String      @db.VarChar(200)
+  description      String?     @db.Text
+  status           String      @default("UPCOMING") @db.VarChar(30)
+  dueDate          DateTime?   @map("due_date") @db.Date
+  completedAt      DateTime?   @map("completed_at")
+  paymentAmount    Decimal?    @map("payment_amount") @db.Decimal(15, 2)
+  paymentPercentage Decimal?   @map("payment_percentage") @db.Decimal(5, 2)
+  invoiceRequired  Boolean     @default(false) @map("invoice_required")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@map("milestones")
+}
+
+model Transaction {
+  id                String            @id @default(uuid()) @db.Char(36)
+  transactionNumber String            @unique @map("transaction_number") @db.VarChar(80)
+  type              TransactionType
+  clientId          String?           @map("client_id") @db.Char(36)
+  projectId         String?           @map("project_id") @db.Char(36)
+  amcId             String?           @map("amc_id") @db.Char(36)
+  amount            Decimal           @db.Decimal(15, 2)
+  currency          String            @default("INR") @db.Char(3)
+  paymentMethod     String?           @map("payment_method") @db.VarChar(60)
+  transactionDate   DateTime          @map("transaction_date") @db.Date
+  referenceNumber   String?           @map("reference_number") @db.VarChar(120)
+  description       String?           @db.Text
+  status            TransactionStatus @default(RECORDED)
+  recordedById      String            @map("recorded_by") @db.Char(36)
+  verifiedById      String?           @map("verified_by") @db.Char(36)
+  verifiedAt        DateTime?         @map("verified_at")
+  voidedById        String?           @map("voided_by") @db.Char(36)
+  voidedAt          DateTime?         @map("voided_at")
+  voidReason        String?           @map("void_reason") @db.Text
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  client            Client?           @relation(fields: [clientId], references: [id])
+  project           Project?          @relation(fields: [projectId], references: [id])
+  amc               AmcContract?     @relation(fields: [amcId], references: [id])
+  invoice           Invoice?
+  @@index([transactionDate, type])
+  @@index([clientId])
+  @@index([referenceNumber])
+  @@map("transactions")
+}
+
+model Invoice {
+  id                String        @id @default(uuid()) @db.Char(36)
+  invoiceNumber     String        @unique @map("invoice_number") @db.VarChar(80)
+  transactionId     String?       @unique @map("transaction_id") @db.Char(36)
+  clientId          String        @map("client_id") @db.Char(36)
+  projectId         String?       @map("project_id") @db.Char(36)
+  invoiceDate       DateTime      @map("invoice_date") @db.Date
+  subtotal          Decimal       @db.Decimal(15, 2)
+  taxTotal          Decimal       @default(0) @map("tax_total") @db.Decimal(15, 2)
+  total             Decimal       @db.Decimal(15, 2)
+  currency          String        @default("INR") @db.Char(3)
+  status            InvoiceStatus @default(GENERATED)
+  billingSnapshot   Json          @map("billing_snapshot_json")
+  fileId            String?       @map("file_id") @db.Char(36)
+  generatedById     String?       @map("generated_by") @db.Char(36)
+  generatedAt       DateTime      @default(now()) @map("generated_at")
+  sentAt            DateTime?     @map("sent_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  transaction       Transaction?  @relation(fields: [transactionId], references: [id])
+  client            Client        @relation(fields: [clientId], references: [id])
+  project           Project?      @relation(fields: [projectId], references: [id])
+  items             InvoiceItem[]
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid()) @db.Char(36)
+  invoiceId   String   @map("invoice_id") @db.Char(36)
+  description String   @db.VarChar(500)
+  quantity    Decimal  @db.Decimal(12, 2)
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(15, 2)
+  taxRate     Decimal? @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount   Decimal  @default(0) @map("tax_amount") @db.Decimal(15, 2)
+  lineTotal   Decimal  @map("line_total") @db.Decimal(15, 2)
+  sortOrder   Int      @default(0) @map("sort_order")
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  @@map("invoice_items")
+}
+
+model AmcContract {
+  id               String        @id @default(uuid()) @db.Char(36)
+  clientId         String        @map("client_id") @db.Char(36)
+  projectId        String?       @map("project_id") @db.Char(36)
+  title            String        @db.VarChar(200)
+  description      String?       @db.Text
+  billingFrequency String        @map("billing_frequency") @db.VarChar(30)
+  amount           Decimal       @db.Decimal(15, 2)
+  currency         String        @default("INR") @db.Char(3)
+  startDate        DateTime      @map("start_date") @db.Date
+  nextDueDate      DateTime      @map("next_due_date") @db.Date
+  endDate          DateTime?     @map("end_date") @db.Date
+  status           AmcStatus     @default(ACTIVE)
+  responsibleUserId String?      @map("responsible_user_id") @db.Char(36)
+  notes            String?       @db.Text
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  client           Client        @relation(fields: [clientId], references: [id])
+  project          Project?      @relation(fields: [projectId], references: [id])
+  transactions     Transaction[]
+  payments         AmcPayment[]
+  @@index([nextDueDate, status])
+  @@map("amc_contracts")
+}
+
+model AmcPayment {
+  id          String       @id @default(uuid()) @db.Char(36)
+  amcId       String       @map("amc_id") @db.Char(36)
+  transactionId String     @map("transaction_id") @db.Char(36)
+  periodStart DateTime     @map("period_start") @db.Date
+  periodEnd   DateTime     @map("period_end") @db.Date
+  amount      Decimal      @db.Decimal(15, 2)
+  paidAt      DateTime     @map("paid_at")
+  amc         AmcContract  @relation(fields: [amcId], references: [id], onDelete: Cascade)
+  @@index([amcId, periodStart])
+  @@map("amc_payments")
+}
+
+model Activity {
+  id                String   @id @default(uuid()) @db.Char(36)
+  activityType      String   @map("activity_type") @db.VarChar(100)
+  actorUserId       String?  @map("actor_user_id") @db.Char(36)
+  entityType        String   @map("entity_type") @db.VarChar(80)
+  entityId          String   @map("entity_id") @db.Char(36)
+  parentEntityType  String?  @map("parent_entity_type") @db.VarChar(80)
+  parentEntityId    String?  @map("parent_entity_id") @db.Char(36)
+  summary           String   @db.VarChar(500)
+  metadata          Json     @map("metadata_json")
+  createdAt         DateTime @default(now()) @map("created_at")
+  actor             User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  @@index([entityType, entityId, createdAt])
+  @@map("activities")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Char(36)
+  actorUserId String?  @map("actor_user_id") @db.Char(36)
+  action      String   @db.VarChar(120)
+  entityType  String   @map("entity_type") @db.VarChar(80)
+  entityId    String   @map("entity_id") @db.Char(36)
+  before     Json?
+  after      Json?
+  requestId   String?  @map("request_id") @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at")
+  actor       User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  @@index([entityType, entityId, createdAt])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Char(36)
+  userId    String    @map("user_id") @db.Char(36)
+  type      String    @db.VarChar(80)
+  title     String    @db.VarChar(200)
+  body      String    @db.Text
+  targetUrl String?   @map("target_url") @db.VarChar(500)
+  readAt   DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}

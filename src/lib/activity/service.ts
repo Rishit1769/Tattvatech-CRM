@@ -1,4 +1,5 @@
-import { db } from "@/lib/db/pool";
+import { prisma } from "@/lib/db/prisma";
+import type { Prisma } from "@prisma/client";
 
 export type ActivityInput = {
   activityType: string;
@@ -12,20 +13,5 @@ export type ActivityInput = {
 };
 
 export async function recordActivity(input: ActivityInput): Promise<void> {
-  await db.execute(
-    `INSERT INTO activities
-      (id, activity_type, actor_user_id, entity_type, entity_id, parent_entity_type,
-       parent_entity_id, summary, metadata_json, created_at)
-     VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())`,
-    [
-      input.activityType,
-      input.actorUserId ?? null,
-      input.entityType,
-      input.entityId,
-      input.parentEntityType ?? null,
-      input.parentEntityId ?? null,
-      input.summary,
-      JSON.stringify(input.metadata ?? {}),
-    ],
-  );
+  await prisma.activity.create({ data: { activityType: input.activityType, actorUserId: input.actorUserId ?? null, entityType: input.entityType, entityId: input.entityId, parentEntityType: input.parentEntityType ?? null, parentEntityId: input.parentEntityId ?? null, summary: input.summary, metadata: (input.metadata ?? {}) as Prisma.InputJsonValue } });
 }

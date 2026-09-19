@@ -30,9 +30,9 @@ Displays role-aware navigation, lists, forms, detail pages, timelines, dashboard
 
 Owns authentication, authorization, validation, transactions, workflow orchestration, activity/audit creation, file authorization, invoice numbering, email delivery status, and idempotency.
 
-### MySQL
+### Prisma + MySQL
 
-Stores users, permissions, CRM records, project/finance records, metadata, settings, activities, audits, notifications, and infrastructure state. Store money as precise decimals and timestamps as real temporal values.
+Prisma is the typed server-side data access layer for MySQL. MySQL stores users, permissions, CRM records, project/finance records, metadata, settings, activities, audits, notifications, and infrastructure state. Store money as precise decimals and timestamps as real temporal values.
 
 ### MinIO
 
@@ -87,7 +87,7 @@ Temporary demos run on TattvaTech infrastructure, are explicitly labelled `DEMO`
 src/
   app/                         # App Router pages and route handlers
   components/                  # reusable UI and domain components
-  lib/                         # auth, db, MinIO, mail, validation, permissions
+  lib/                         # auth, Prisma db, MinIO, mail, validation, permissions
   server/                      # domain services by module
   types/
   utils/
@@ -95,3 +95,7 @@ src/
 ```
 
 Do not put all business logic in `page.tsx`, and do not duplicate invoice, mail, activity, or permission logic across modules.
+
+## 6. Database tooling decision
+
+Prisma schema changes are maintained in `prisma/schema.prisma` and applied through the Prisma CLI. The generated Prisma Client is used by server-side services. This is an explicit update to the original specification’s ORM exclusion.

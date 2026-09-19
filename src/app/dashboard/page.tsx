@@ -10,7 +10,7 @@ export default async function DashboardPage() {
     <WorkspaceShell user={user}>
       <div className="mb-8">
         <p className="text-sm font-medium text-brand-600">Company Workspace</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-ink">Good to see you, {String(user.full_name).split(" ")[0]}</h1>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-ink">Good to see you, {user.fullName.split(" ")[0]}</h1>
         <p className="mt-2 text-slate">Phase 0 foundation is ready. Business modules will be added phase by phase.</p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">

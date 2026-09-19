@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { LogoutButton } from "@/components/auth/logout-button";
 
-type WorkspaceUser = Record<string, unknown>;
+type WorkspaceUser = { fullName: string; role: { name: string } };
 
 export function WorkspaceShell({ user, children }: { user: WorkspaceUser; children: ReactNode }) {
   return (
@@ -22,8 +22,8 @@ export function WorkspaceShell({ user, children }: { user: WorkspaceUser; childr
           <span className="text-sm text-slate">Dashboard</span>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-sm font-medium text-ink">{String(user.full_name)}</p>
-              <p className="text-xs text-slate">{String(user.role_name)}</p>
+              <p className="text-sm font-medium text-ink">{user.fullName}</p>
+              <p className="text-xs text-slate">{user.role.name}</p>
             </div>
             <LogoutButton />
           </div>
