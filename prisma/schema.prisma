@@ -604,3 +604,78 @@ model EmailEvent {
   @@index([status, createdAt])
   @@map("email_events")
 }
+
+model Server {
+  id             String          @id @default(uuid()) @db.Char(36)
+  name           String          @unique @db.VarChar(160)
+  purpose        String?         @db.Text
+  environment    String          @default("INTERNAL") @db.VarChar(40)
+  hostname       String?         @db.VarChar(255)
+  ownershipClass String          @map("ownership_class") @db.VarChar(50)
+  status         ServiceStatus   @default(UNKNOWN)
+  notes          String?         @db.Text
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  services       Service[]
+  metrics        ServerMetric[]
+  incidents      Incident[]
+  @@map("servers")
+}
+
+model Service {
+  id            String        @id @default(uuid()) @db.Char(36)
+  serverId      String        @map("server_id") @db.Char(36)
+  name          String        @db.VarChar(160)
+  serviceType   String        @map("service_type") @db.VarChar(80)
+  healthUrl     String?       @map("health_url") @db.VarChar(500)
+  status        ServiceStatus @default(UNKNOWN)
+  lastCheckedAt DateTime?     @map("last_checked_at")
+  isCore        Boolean       @default(false) @map("is_core")
+  notes         String?       @db.Text
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  server        Server        @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  incidents     Incident[]
+  @@unique([serverId, name])
+  @@map("services")
+}
+
+model ServerMetric {
+  id             String   @id @default(uuid()) @db.Char(36)
+  serverId       String   @map("server_id") @db.Char(36)
+  capturedAt     DateTime @default(now()) @map("captured_at")
+  cpuPercent     Decimal? @map("cpu_percent") @db.Decimal(5, 2)
+  ramUsedBytes   BigInt?  @map("ram_used_bytes")
+  ramTotalBytes  BigInt?  @map("ram_total_bytes")
+  diskUsedBytes  BigInt?  @map("disk_used_bytes")
+  diskTotalBytes BigInt?  @map("disk_total_bytes")
+  load1m         Decimal? @map("load_1m") @db.Decimal(8, 2)
+  uptimeSeconds  BigInt?  @map("uptime_seconds")
+  server         Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  @@index([serverId, capturedAt])
+  @@map("server_metrics")
+}
+
+model Incident {
+  id             String        @id @default(uuid()) @db.Char(36)
+  title          String        @db.VarChar(240)
+  severity       String        @default("WARNING") @db.VarChar(30)
+  serverId       String?       @map("server_id") @db.Char(36)
+  serviceId      String?       @map("service_id") @db.Char(36)
+  status         String        @default("OPEN") @db.VarChar(30)
+  startedAt      DateTime?     @map("started_at")
+  detectedAt     DateTime      @default(now()) @map("detected_at")
+  acknowledgedBy String?       @map("acknowledged_by") @db.Char(36)
+  acknowledgedAt DateTime?     @map("acknowledged_at")
+  resolvedAt     DateTime?     @map("resolved_at")
+  impact         String?       @db.Text
+  cause          String?       @db.Text
+  resolution     String?       @db.Text
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  server         Server?       @relation(fields: [serverId], references: [id])
+  service        Service?      @relation(fields: [serviceId], references: [id])
+  @@index([status, severity, detectedAt])
+  @@map("incidents")
+}

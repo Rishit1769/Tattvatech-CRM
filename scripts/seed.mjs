@@ -16,6 +16,7 @@ const permissionData = [
   ["proposal.view", "View proposals"], ["proposal.create", "Create proposals"],
   ["project.view", "View projects"], ["project.create", "Create projects"], ["task.view", "View tasks"], ["task.create", "Create tasks"],
   ["finance.view", "View finance"], ["finance.transaction.create", "Create transactions"], ["finance.invoice.view", "View invoices"],
+  ["infrastructure.view", "View infrastructure"], ["infrastructure.manage", "Manage infrastructure"], ["infrastructure.incident.manage", "Manage incidents"],
 ];
 for (const [key, description] of permissionData) await prisma.permission.upsert({ where: { key }, update: { description }, create: { key, description } });
 const roleNames = ["Owner", "Admin", "Business", "Technical", "Member"];
@@ -26,5 +27,8 @@ for (const permission of permissions) await prisma.rolePermission.upsert({ where
 const business = await prisma.role.findUniqueOrThrow({ where: { name: "Business" } });
 const businessKeys = new Set(["dashboard.view", "lead.view", "lead.create", "lead.edit", "lead.assign", "lead.convert", "client.view", "client.create", "client.edit", "meeting.view", "meeting.create", "meeting.edit", "meeting.complete", "follow_up.view", "follow_up.create", "follow_up.edit", "proposal.view", "proposal.create"]);
 for (const permission of permissions.filter((item) => businessKeys.has(item.key))) await prisma.rolePermission.upsert({ where: { roleId_permissionId: { roleId: business.id, permissionId: permission.id } }, update: {}, create: { roleId: business.id, permissionId: permission.id } });
+const technical = await prisma.role.findUniqueOrThrow({ where: { name: "Technical" } });
+const technicalKeys = new Set(["dashboard.view", "infrastructure.view", "infrastructure.manage", "infrastructure.incident.manage", "project.view", "task.view", "task.create"]);
+for (const permission of permissions.filter((item) => technicalKeys.has(item.key))) await prisma.rolePermission.upsert({ where: { roleId_permissionId: { roleId: technical.id, permissionId: permission.id } }, update: {}, create: { roleId: technical.id, permissionId: permission.id } });
 console.log("Foundation seed applied. Create an initial user with npm run db:create-user.");
 await prisma.$disconnect();

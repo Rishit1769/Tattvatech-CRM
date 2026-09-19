@@ -1,0 +1,6 @@
+import { z } from "zod";
+
+export const serverCreateSchema = z.object({ name: z.string().min(1).max(160), purpose: z.string().max(5000).optional(), environment: z.string().max(40).default("INTERNAL"), hostname: z.string().max(255).optional(), ownershipClass: z.string().min(1).max(50), notes: z.string().max(5000).optional() });
+export const serviceCreateSchema = z.object({ serverId: z.string().uuid(), name: z.string().min(1).max(160), serviceType: z.string().min(1).max(80), healthUrl: z.string().url().optional(), isCore: z.boolean().optional(), notes: z.string().max(5000).optional() });
+export const metricCreateSchema = z.object({ serverId: z.string().uuid(), cpuPercent: z.coerce.number().min(0).max(100).optional(), ramUsedBytes: z.coerce.bigint().optional(), ramTotalBytes: z.coerce.bigint().optional(), diskUsedBytes: z.coerce.bigint().optional(), diskTotalBytes: z.coerce.bigint().optional(), load1m: z.coerce.number().min(0).optional(), uptimeSeconds: z.coerce.bigint().optional() });
+export const incidentCreateSchema = z.object({ title: z.string().min(1).max(240), severity: z.enum(["INFO", "WARNING", "CRITICAL"]).default("WARNING"), serverId: z.string().uuid().optional(), serviceId: z.string().uuid().optional(), impact: z.string().max(5000).optional() });
