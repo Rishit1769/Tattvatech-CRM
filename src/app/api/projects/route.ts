@@ -1,0 +1,9 @@
+import { NextResponse } from "next/server";
+import { requirePermission } from "@/lib/auth/permissions";
+import { prisma } from "@/lib/db/prisma";
+import { recordActivity } from "@/lib/activity/service";
+import { apiError, unknownApiError } from "@/lib/api/response";
+import { projectCreateSchema } from "@/lib/validation/crm";
+
+export async function GET() { try { await requirePermission("project.view"); const projects = await prisma.project.findMany({ where: { archivedAt: null }, include: { client: true, _count: { select: { tasks: true, milestones: true } } }, orderBy: { updatedAt: "desc" }, take: 100 }); return NextResponse.json({ projects }); } catch { return apiError("Unable to load projects", 500); } }
+export async function POST(request: Request) { try { const user = await requirePermission("project.create"); const input = projectCreateSchema.parse(await request.json()); const project = await prisma.project.create({ data: { ...input, projectCode: `TT-PROJ-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`, dealValue: input.dealValue, expectedDeliveryDate: input.expectedDeliveryDate ? new Date(`${input.expectedDeliveryDate}T00:00:00Z`) : undefined, createdById: user.id } }); await recordActivity({ activityType: "project.created", actorUserId: user.id, entityType: "project", entityId: project.id, summary: `${user.fullName} created project “${project.name}”.` }); return NextResponse.json({ project }, { status: 201 }); } catch (error) { return error && typeof error === "object" && "name" in error && error.name === "ZodError" ? apiError("Invalid project data") : unknownApiError(); } }
