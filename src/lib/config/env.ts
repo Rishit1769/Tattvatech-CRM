@@ -12,6 +12,11 @@ const envSchema = z.object({
   SESSION_COOKIE_NAME: z.string().min(1).default("tt_session"),
   SESSION_TTL_DAYS: z.coerce.number().int().positive().default(14),
   SESSION_SECRET: z.string().min(16).default("development-only-change-me"),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_FROM: z.string().default("TattvaTech CRM <crm@example.com>"),
 });
 
 export const env = envSchema.parse({
@@ -26,4 +31,9 @@ export const env = envSchema.parse({
   SESSION_COOKIE_NAME: process.env.SESSION_COOKIE_NAME,
   SESSION_TTL_DAYS: process.env.SESSION_TTL_DAYS,
   SESSION_SECRET: process.env.SESSION_SECRET,
+  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_PORT: process.env.SMTP_PORT,
+  SMTP_USER: process.env.SMTP_USER,
+  SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+  SMTP_FROM: process.env.SMTP_FROM,
 });
