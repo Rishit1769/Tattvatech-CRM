@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { WorkspaceShell } from "@/components/layout/workspace-shell";
+import { DashboardMetrics } from "@/components/dashboard/dashboard-metrics";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -13,7 +14,8 @@ export default async function DashboardPage() {
         <h1 className="mt-1 text-3xl font-semibold tracking-tight text-ink">Good to see you, {user.fullName.split(" ")[0]}</h1>
         <p className="mt-2 text-slate">Phase 0 foundation is ready. Business modules will be added phase by phase.</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
+      <DashboardMetrics />
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
         {[
           ["Authentication", "Secure session foundation", "Ready"],
           ["Access control", "Data-driven permissions", "Ready"],

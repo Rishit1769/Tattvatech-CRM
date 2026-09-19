@@ -11,7 +11,8 @@
     "db:seed": "node scripts/seed.mjs",
     "db:create-user": "node scripts/create-user.mjs",
     "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push"
+    "prisma:push": "prisma db push",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
