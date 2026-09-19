@@ -1,0 +1,9 @@
+import { NextResponse } from "next/server";
+import { requirePermission } from "@/lib/auth/permissions";
+import { prisma } from "@/lib/db/prisma";
+import { recordActivity } from "@/lib/activity/service";
+import { apiError, unknownApiError } from "@/lib/api/response";
+import { amcCreateSchema } from "@/lib/validation/crm";
+
+export async function GET() { try { await requirePermission("finance.view"); const amcs = await prisma.amcContract.findMany({ include: { client: true, project: true, payments: true }, orderBy: { nextDueDate: "asc" }, take: 100 }); return NextResponse.json({ amcs }); } catch (error) { return error instanceof Error && error.message === "UNAUTHENTICATED" ? apiError("Authentication required", 401) : error instanceof Error && error.message === "FORBIDDEN" ? apiError("Forbidden", 403) : apiError("Unable to load AMC records", 500); } }
+export async function POST(request: Request) { try { const user = await requirePermission("finance.transaction.create"); const input = amcCreateSchema.parse(await request.json()); const amc = await prisma.amcContract.create({ data: { ...input, amount: input.amount, currency: input.currency.toUpperCase(), startDate: new Date(`${input.startDate}T00:00:00Z`), nextDueDate: new Date(`${input.nextDueDate}T00:00:00Z`), endDate: input.endDate ? new Date(`${input.endDate}T00:00:00Z`) : undefined, responsibleUserId: input.responsibleUserId ?? user.id } }); await recordActivity({ activityType: "amc.created", actorUserId: user.id, entityType: "amc_contract", entityId: amc.id, summary: `${user.fullName} created AMC “${amc.title}”.` }); return NextResponse.json({ amc }, { status: 201 }); } catch (error) { return error && typeof error === "object" && "name" in error && error.name === "ZodError" ? apiError("Invalid AMC data") : unknownApiError(); } }
