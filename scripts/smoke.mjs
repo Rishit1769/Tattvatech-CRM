@@ -10,5 +10,5 @@ const checks = [
   ["search API auth", "/api/search?q=crm", 401],
 ];
 let failed = 0;
-for (const [name, path, expected] of checks) { const response = await fetch(`${baseUrl}${path}`); const result = response.status === expected ? "PASS" : "FAIL"; console.log(`${result} ${name}: expected ${expected}, got ${response.status}`); if (result === "FAIL") failed++; }
+for (const [name, path, expected] of checks) { const response = await fetch(`${baseUrl}${path}`, { redirect: "manual" }); const result = response.status === expected ? "PASS" : "FAIL"; console.log(`${result} ${name}: expected ${expected}, got ${response.status}`); if (result === "FAIL") failed++; }
 if (failed) process.exit(1);
