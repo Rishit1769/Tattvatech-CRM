@@ -1,0 +1,9 @@
+import { NextResponse } from "next/server";
+import { requirePermission } from "@/lib/auth/permissions";
+import { prisma } from "@/lib/db/prisma";
+import { recordActivity } from "@/lib/activity/service";
+import { apiError, unknownApiError } from "@/lib/api/response";
+import { demoCreateSchema } from "@/lib/validation/demo";
+
+export async function GET() { try { await requirePermission("infrastructure.view"); const demos = await prisma.demoEnvironment.findMany({ orderBy: { createdAt: "desc" }, take: 100 }); return NextResponse.json({ demos }); } catch (error) { return error instanceof Error && error.message === "UNAUTHENTICATED" ? apiError("Authentication required", 401) : apiError("Unable to load demos", 500); } }
+export async function POST(request: Request) { try { const user = await requirePermission("infrastructure.demo.launch"); const input = demoCreateSchema.parse(await request.json()); const running = await prisma.demoEnvironment.count({ where: { status: { in: ["REQUESTED", "STARTING", "RUNNING"] } } }); if (running >= 3) return apiError("Demo capacity is full; protect core services before launching another demo", 409); const demo = await prisma.demoEnvironment.create({ data: { ...input, expiresAt: new Date(Date.now() + input.expiryHours * 60 * 60 * 1000), requestedById: user.id, status: "REQUESTED" } }); await recordActivity({ activityType: "demo.requested", actorUserId: user.id, entityType: "demo_environment", entityId: demo.id, summary: `${user.fullName} requested ${demo.templateKey} demo.` }); return NextResponse.json({ demo, orchestration: "recorded-request", message: "Demo request recorded. Runtime provisioning adapter is ready for a future container integration." }, { status: 201 }); } catch (error) { return error && typeof error === "object" && "name" in error && error.name === "ZodError" ? apiError("Invalid demo request") : unknownApiError(); } }

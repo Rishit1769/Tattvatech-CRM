@@ -14,7 +14,7 @@ export function WorkspaceShell({ user, children }: { user: WorkspaceUser; childr
         <nav className="space-y-1 text-sm" aria-label="Primary navigation">
           <a className="block rounded-lg bg-brand-50 px-3 py-2 font-medium text-brand-700" href="/dashboard">Dashboard</a>
           <p className="px-3 pb-1 pt-6 text-[11px] font-bold uppercase tracking-wider text-slate">Coming next</p>
-          {[['Leads', '/leads'], ['Clients', '/clients'], ['Projects', '/projects'], ['Finance', '/finance'], ['Infrastructure', '/infrastructure']].map(([item, href]) => <a className="block rounded-lg px-3 py-2 text-slate hover:bg-slate-50 hover:text-ink" href={href} key={item}>{item}</a>)}
+          {[['Leads', '/leads'], ['Clients', '/clients'], ['Projects', '/projects'], ['Finance', '/finance'], ['Infrastructure', '/infrastructure'], ['Demo environments', '/infrastructure/demos']].map(([item, href]) => <a className="block rounded-lg px-3 py-2 text-slate hover:bg-slate-50 hover:text-ink" href={href} key={item}>{item}</a>)}
         </nav>
       </aside>
       <div className="min-w-0 flex-1">

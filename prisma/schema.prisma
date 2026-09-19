@@ -679,3 +679,24 @@ model Incident {
   @@index([status, severity, detectedAt])
   @@map("incidents")
 }
+
+model DemoEnvironment {
+  id             String      @id @default(uuid()) @db.Char(36)
+  templateKey    String      @map("template_key") @db.VarChar(100)
+  leadId         String?     @map("lead_id") @db.Char(36)
+  clientId       String?     @map("client_id") @db.Char(36)
+  meetingId      String?     @map("meeting_id") @db.Char(36)
+  requestedById  String      @map("requested_by") @db.Char(36)
+  serverId       String?     @map("server_id") @db.Char(36)
+  status         DemoStatus  @default(REQUESTED)
+  demoUrl        String?     @map("demo_url") @db.VarChar(500)
+  startedAt      DateTime?   @map("started_at")
+  expiresAt      DateTime    @map("expires_at")
+  stoppedAt      DateTime?   @map("stopped_at")
+  sampleProfile  String?     @map("sample_profile") @db.VarChar(100)
+  failureMessage String?     @map("failure_message") @db.Text
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  @@index([status, expiresAt])
+  @@map("demo_environments")
+}
