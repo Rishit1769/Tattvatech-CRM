@@ -25,14 +25,14 @@ export function useResource<T>(url: string, key?: string) {
   useEffect(() => { const controller = new AbortController(); void load(controller.signal); return () => { controller.abort(); revision.current++; }; }, [load]);
   return { data, loading, error, reload: () => load() };
 }
-export function ResourcePage<T extends { id: string }>({ eyebrow, title, description, endpoint, resourceKey, columns, searchText, form }: {
+export function ResourcePage<T extends { id: string }>({ eyebrow, title, description, endpoint, resourceKey, columns, searchText, form, action }: {
   eyebrow: string; title: string; description: string; endpoint: string; resourceKey: string;
-  columns: Column<T>[]; searchText: (row: T) => string; form?: (reload: () => Promise<void>) => ReactNode;
+  columns: Column<T>[]; searchText: (row: T) => string; form?: (reload: () => Promise<void>) => ReactNode; action?: ReactNode;
 }) {
   const { data, error, loading, reload } = useResource<T[]>(endpoint, resourceKey);
   const [filter, setFilter] = useState("");
   const rows = (data ?? []).filter((row) => searchText(row).toLowerCase().includes(filter.trim().toLowerCase()));
-  return <section><PageHeader eyebrow={eyebrow} title={title} description={description} action={form ? <a className="button button-primary" href="#create-record">Add record <span aria-hidden="true">↗</span></a> : undefined} />
+  return <section><PageHeader eyebrow={eyebrow} title={title} description={description} action={action ?? (form ? <a className="button button-primary" href="#create-record">Add record <span aria-hidden="true">↗</span></a> : undefined)} />
     <div className={form ? "work-grid" : ""}><div className="records">
       <SectionHeader title="Records" meta={data ? `${data.length} loaded` : "—"} />
       <div className="toolbar"><Field label="Filter loaded records"><Input type="search" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Name, reference or status…" /></Field><Button variant="ghost" onClick={() => void reload()} disabled={loading}>Refresh ↻</Button></div>
