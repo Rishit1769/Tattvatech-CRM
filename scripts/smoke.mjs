@@ -6,6 +6,12 @@ const checks = [
   ["projects page auth redirect", "/projects", 307],
   ["finance page auth redirect", "/finance", 307],
   ["infrastructure page auth redirect", "/infrastructure", 307],
+  ["dashboard auth redirect", "/dashboard", 307],
+  ["meetings auth redirect", "/meetings", 307],
+  ["follow-ups auth redirect", "/follow-ups", 307],
+  ["demos auth redirect", "/infrastructure/demos", 307],
+  ["workspace search auth redirect", "/workspace/search", 307],
+  ["password change auth redirect", "/change-password", 307],
   ["leads API auth", "/api/leads", 401],
   ["search API auth", "/api/search?q=crm", 401],
 ];

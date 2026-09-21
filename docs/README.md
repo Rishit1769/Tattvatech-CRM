@@ -4,7 +4,7 @@ This folder is the maintained engineering and product documentation for the Tatt
 
 ## Status
 
-The repository is currently specification-stage. The documents below describe the approved target system and the implementation order; they do not imply that the corresponding code already exists.
+The repository contains a working foundation and partial module implementations. The phase documents describe the target system and implementation order; they do not imply that every planned workflow is complete. The frontend design system and current presentation scope are documented separately below.
 
 ## Documentation map
 
@@ -16,6 +16,8 @@ The repository is currently specification-stage. The documents below describe th
 | [api-and-routes.md](api-and-routes.md) | App Router pages, route-handler conventions, and server-side service boundaries |
 | [operations.md](operations.md) | Deployment, backups, security, health checks, incidents, and recovery runbooks |
 | [conventions-and-quality.md](conventions-and-quality.md) | Naming, statuses, validation, idempotency, activity/audit, and definition of done |
+| [design-system.md](design-system.md) | Brand tokens, reusable UI components, responsive behavior, and redesign scope |
+| [frontend-verification.md](frontend-verification.md) | Redesign test evidence, test-data isolation, and remaining verification limits |
 | [phase-0.md](phase-0.md) | Foundation |
 | [phase-1.md](phase-1.md) | CRM |
 | [phase-2.md](phase-2.md) | Projects |
@@ -31,7 +33,7 @@ The repository is currently specification-stage. The documents below describe th
 
 ## Fixed decisions
 
-- Next.js, TypeScript, Tailwind CSS, MySQL, and MinIO are the application stack.
+- Next.js, TypeScript, Tailwind CSS, Prisma, and MySQL are the current application stack. MinIO remains explicitly deferred at the user's request.
 - Nodemailer is the approved server-side email utility.
 - The CRM is one Next.js application. Prisma is now the approved MySQL access layer; do not introduce a separate backend, GraphQL layer, Redis, or microservices without an explicit architecture decision.
 - Version 1 finance entry is manual.
