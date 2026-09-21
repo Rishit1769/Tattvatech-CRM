@@ -42,6 +42,8 @@ export async function revokeCurrentSession(): Promise<void> {
 
 export type CurrentUser = Pick<User, "id" | "fullName" | "email" | "status"> & {
   role: { id: string; name: string };
+  roles: string[];
+  department: string | null;
   forcePasswordChange: boolean;
 };
 
@@ -52,7 +54,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   const session = await prisma.session.findFirst({
     where: { sessionTokenHash: hashToken(token), revokedAt: null, expiresAt: { gt: new Date() }, user: { status: "ACTIVE" } },
-    include: { user: { include: { role: true } } },
+    include: { user: { include: { role: true, userRoles: { include: { role: true } }, department: true } } },
   });
   const user = session?.user
     ? {
@@ -61,6 +63,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
         email: session.user.email,
         status: session.user.status,
         role: { id: session.user.role.id, name: session.user.role.name },
+        roles: [...new Set(session.user.userRoles.map((assignment) => assignment.role.name))],
+        department: session.user.department?.name ?? null,
         forcePasswordChange: session.user.forcePasswordChange,
       }
     : null;
