@@ -1,24 +1,41 @@
 "use client";
+import { useState } from "react";
+import { CreateForm, ResourcePage } from "@/components/ui/resource";
+import { Field, Input, StatusBadge, money } from "@/components/ui/primitives";
 
-import { FormEvent, useEffect, useState } from "react";
-
-type Lead = { id: string; organizationName: string; primaryContactName: string; interest: string | null; stage: string; priority: string; expectedValue: string | number | null; owner?: { fullName: string } | null };
-type Client = { id: string; clientCode: string; name: string; email: string | null; contacts: { name: string }[]; _count: { projects: number; meetings: number } };
-
-async function jsonRequest(url: string, options?: RequestInit) { const response = await fetch(url, { ...options, headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) } }); const data = await response.json(); if (!response.ok) throw new Error(data.error ?? "Request failed"); return data; }
+type Lead = { id: string; organizationName: string; primaryContactName: string; interest: string | null; stage: string; expectedValue: string | number | null };
+type Client = { id: string; clientCode: string; name: string; email: string | null; _count: { projects: number; meetings: number } };
+const emptyLead = { organizationName: "", primaryContactName: "", email: "", interest: "", expectedValue: "" };
+const emptyClient = { name: "", email: "", phone: "", industry: "" };
 
 export function LeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>([]); const [error, setError] = useState(""); const [form, setForm] = useState({ organizationName: "", primaryContactName: "", email: "", interest: "", expectedValue: "" });
-  async function load() { try { setLeads((await jsonRequest("/api/leads")).leads); } catch (e) { setError(e instanceof Error ? e.message : "Unable to load leads"); } }
-  useEffect(() => { void load(); }, []);
-  async function submit(event: FormEvent) { event.preventDefault(); try { await jsonRequest("/api/leads", { method: "POST", body: JSON.stringify({ ...form, expectedValue: form.expectedValue ? Number(form.expectedValue) : undefined }) }); setForm({ organizationName: "", primaryContactName: "", email: "", interest: "", expectedValue: "" }); await load(); } catch (e) { setError(e instanceof Error ? e.message : "Unable to create lead"); } }
-  return <section className="space-y-6"><div><p className="text-sm font-medium text-brand-600">Sales & CRM</p><h1 className="text-3xl font-semibold text-ink">Leads</h1><p className="mt-2 text-slate">Track opportunities from first contact to won or lost.</p></div><div className="grid gap-6 xl:grid-cols-[360px_1fr]"><form onSubmit={submit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold text-ink">New lead</h2>{[["organizationName", "Organization"], ["primaryContactName", "Primary contact"], ["email", "Email"], ["interest", "Interest"], ["expectedValue", "Expected value"]].map(([key, label]) => <label className="block text-sm font-medium text-ink" key={key}>{label}<input className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" type={key === "expectedValue" ? "number" : key === "email" ? "email" : "text"} value={form[key as keyof typeof form]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} required={key === "organizationName" || key === "primaryContactName"} /></label>)}<button className="w-full rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700" type="submit">Create lead</button></form><div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 px-5 py-4"><h2 className="font-semibold text-ink">Pipeline records</h2>{error && <p className="mt-2 text-sm text-red-600">{error}</p>}</div><div className="divide-y divide-slate-100">{leads.length === 0 ? <p className="p-5 text-sm text-slate">No leads yet. Create the first opportunity.</p> : leads.map((lead) => <div className="flex items-center justify-between gap-4 p-5" key={lead.id}><div><p className="font-medium text-ink">{lead.organizationName}</p><p className="text-sm text-slate">{lead.primaryContactName} · {lead.interest || "Interest not set"}</p></div><div className="text-right"><span className="rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700">{lead.stage}</span><p className="mt-1 text-xs text-slate">{lead.expectedValue ? `₹${lead.expectedValue}` : "Value not set"}</p></div></div>)}</div></div></div></section>;
+  const [form, setForm] = useState(emptyLead);
+  return <ResourcePage<Lead> eyebrow="02 / Relationships" title="Your next opportunity." description="A clear view of every conversation, from first contact to won business." endpoint="/api/leads" resourceKey="leads" searchText={(lead) => `${lead.organizationName} ${lead.primaryContactName} ${lead.stage}`}
+    columns={[
+      { label: "Opportunity", render: (lead) => <><p className="record-title">{lead.organizationName}</p><p className="record-meta">{lead.primaryContactName}</p></> },
+      { label: "Stage", render: (lead) => <><StatusBadge status={lead.stage} /><p className="record-meta">{lead.interest || "Interest not set"}</p></> },
+      { label: "Value", render: (lead) => <span className="mono">{lead.expectedValue === null ? "Not set" : money(lead.expectedValue)}</span> },
+    ]}
+    form={(reload) => <CreateForm title="New lead" endpoint="/api/leads" payload={() => ({ ...form, expectedValue: form.expectedValue ? Number(form.expectedValue) : undefined })} reset={() => setForm(emptyLead)} reload={reload} submitLabel="Create lead ↗">
+      <Field label="Organization *"><Input required maxLength={200} value={form.organizationName} onChange={(e) => setForm({ ...form, organizationName: e.target.value })} /></Field>
+      <Field label="Primary contact *"><Input required maxLength={160} value={form.primaryContactName} onChange={(e) => setForm({ ...form, primaryContactName: e.target.value })} /></Field>
+      <Field label="Email"><Input type="email" maxLength={320} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
+      <Field label="Interest"><Input maxLength={120} value={form.interest} onChange={(e) => setForm({ ...form, interest: e.target.value })} /></Field>
+      <Field label="Expected value (INR)"><Input type="number" min="0" step="0.01" value={form.expectedValue} onChange={(e) => setForm({ ...form, expectedValue: e.target.value })} /></Field>
+    </CreateForm>} />;
 }
-
 export function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>([]); const [form, setForm] = useState({ name: "", email: "", phone: "", industry: "" }); const [error, setError] = useState("");
-  async function load() { try { setClients((await jsonRequest("/api/clients")).clients); } catch (e) { setError(e instanceof Error ? e.message : "Unable to load clients"); } }
-  useEffect(() => { void load(); }, []);
-  async function submit(event: FormEvent) { event.preventDefault(); try { await jsonRequest("/api/clients", { method: "POST", body: JSON.stringify(form) }); setForm({ name: "", email: "", phone: "", industry: "" }); await load(); } catch (e) { setError(e instanceof Error ? e.message : "Unable to create client"); } }
-  return <section className="space-y-6"><div><p className="text-sm font-medium text-brand-600">Sales & CRM</p><h1 className="text-3xl font-semibold text-ink">Clients</h1><p className="mt-2 text-slate">Organizations and their relationship history.</p></div><div className="grid gap-6 xl:grid-cols-[360px_1fr]"><form onSubmit={submit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-semibold text-ink">New client</h2>{[["name", "Organization"], ["email", "Email"], ["phone", "Phone"], ["industry", "Industry"]].map(([key, label]) => <label className="block text-sm font-medium text-ink" key={key}>{label}<input className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" value={form[key as keyof typeof form]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} required={key === "name"} /></label>)}<button className="w-full rounded-lg bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700" type="submit">Create client</button></form><div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-200 px-5 py-4"><h2 className="font-semibold text-ink">Client directory</h2>{error && <p className="mt-2 text-sm text-red-600">{error}</p>}</div><div className="divide-y divide-slate-100">{clients.length === 0 ? <p className="p-5 text-sm text-slate">No clients yet.</p> : clients.map((client) => <div className="flex items-center justify-between gap-4 p-5" key={client.id}><div><p className="font-medium text-ink">{client.name}</p><p className="text-sm text-slate">{client.clientCode} · {client.email || "No email"}</p></div><p className="text-right text-xs text-slate">{client._count.projects} projects<br />{client._count.meetings} meetings</p></div>)}</div></div></div></section>;
+  const [form, setForm] = useState(emptyClient);
+  return <ResourcePage<Client> eyebrow="03 / Relationships" title="Built on relationships." description="One directory for the organizations you work with and the work you share." endpoint="/api/clients" resourceKey="clients" searchText={(client) => `${client.name} ${client.email ?? ""} ${client.clientCode}`}
+    columns={[
+      { label: "Organization", render: (client) => <><p className="record-title">{client.name}</p><p className="record-meta mono">{client.clientCode}</p></> },
+      { label: "Contact", render: (client) => <span className="muted">{client.email || "No email recorded"}</span> },
+      { label: "Relationships", render: (client) => <><p>{client._count.projects} projects</p><p className="record-meta">{client._count.meetings} meetings</p></> },
+    ]}
+    form={(reload) => <CreateForm title="New client" endpoint="/api/clients" payload={() => form} reset={() => setForm(emptyClient)} reload={reload} submitLabel="Create client ↗">
+      <Field label="Organization *"><Input required maxLength={200} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+      <Field label="Email"><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
+      <Field label="Phone"><Input type="tel" maxLength={40} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
+      <Field label="Industry"><Input maxLength={120} value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} /></Field>
+    </CreateForm>} />;
 }
