@@ -113,7 +113,8 @@ model Role {
   name        String           @unique @db.VarChar(80)
   description String?          @db.VarChar(255)
   isSystem    Boolean          @default(false) @map("is_system")
-  users       User[]
+  legacyUsers User[]           @relation("LegacyUserRole")
+  userRoles   UserRole[]
   permissions RolePermission[]
   createdAt   DateTime         @default(now()) @map("created_at")
   updatedAt   DateTime         @updatedAt @map("updated_at")
@@ -144,13 +145,19 @@ model User {
   email          String         @unique @db.VarChar(320)
   passwordHash   String         @map("password_hash") @db.VarChar(255)
   roleId         String         @map("role_id") @db.Char(36)
+  departmentId   String?        @map("department_id") @db.Char(36)
+  reportsToId    String?        @map("reports_to_id") @db.Char(36)
   status              UserStatus     @default(INVITED)
   forcePasswordChange Boolean        @default(false) @map("force_password_change")
   lastLoginAt        DateTime?      @map("last_login_at")
   disabledAt         DateTime?      @map("disabled_at")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
-  role          Role           @relation(fields: [roleId], references: [id])
+  role          Role           @relation("LegacyUserRole", fields: [roleId], references: [id])
+  userRoles     UserRole[]
+  department    Department?    @relation(fields: [departmentId], references: [id])
+  reportsTo     User?          @relation("UserReporting", fields: [reportsToId], references: [id])
+  directReports User[]         @relation("UserReporting")
   sessions      Session[]
   activities    Activity[]
   audits        AuditLog[]
@@ -159,9 +166,42 @@ model User {
   ownedLeads    Lead[]         @relation("LeadOwner")
   createdLeads  Lead[]         @relation("LeadCreator")
   createdAtMeetings Meeting[]  @relation("MeetingCreator")
+  ownedProjects  Project[]      @relation("ProjectOwner")
+  managedProjects Project[]     @relation("ProjectManager")
+  technicalProjects Project[]   @relation("ProjectTechnicalOwner")
+  createdProjects Project[]     @relation("ProjectCreator")
+  projectMemberships ProjectMember[]
+  mentoredProjectMembers ProjectMember[] @relation("ProjectMentor")
+  ownedModules ProjectModule[] @relation("ModuleOwner")
   @@index([roleId])
   @@index([status])
   @@map("users")
+}
+
+model UserRole {
+  id         String   @id @default(uuid()) @db.Char(36)
+  userId     String   @map("user_id") @db.Char(36)
+  roleId     String   @map("role_id") @db.Char(36)
+  assignedBy String?  @map("assigned_by") @db.Char(36)
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  @@unique([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model Department {
+  id          String   @id @default(uuid()) @db.Char(36)
+  code        String   @unique @db.VarChar(60)
+  name        String   @unique @db.VarChar(120)
+  description String?  @db.VarChar(255)
+  isActive    Boolean  @default(true) @map("is_active")
+  users       User[]
+  projects    Project[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  @@map("departments")
 }
 
 model Session {
@@ -357,17 +397,33 @@ model Proposal {
   @@map("proposals")
 }
 
+model ProjectFamily {
+  id          String    @id @default(uuid()) @db.Char(36)
+  code        String    @unique @db.VarChar(20)
+  name        String    @unique @db.VarChar(120)
+  description String?   @db.VarChar(255)
+  isActive    Boolean   @default(true) @map("is_active")
+  projects    Project[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  @@map("project_families")
+}
+
 model Project {
   id                    String        @id @default(uuid()) @db.Char(36)
   projectCode           String        @unique @map("project_code") @db.VarChar(80)
-  clientId              String        @map("client_id") @db.Char(36)
+  familyId              String?       @map("family_id") @db.Char(36)
+  clientId              String?       @map("client_id") @db.Char(36)
   originatingLeadId     String?       @map("originating_lead_id") @db.Char(36)
+  departmentId          String?       @map("department_id") @db.Char(36)
   name                  String        @db.VarChar(200)
+  projectType           String        @default("CLIENT_PROJECT") @map("project_type") @db.VarChar(40)
   type                  String?       @db.VarChar(100)
   description           String?       @db.Text
   status                ProjectStatus @default(PLANNING)
   priority              TaskPriority  @default(MEDIUM)
   projectOwnerUserId    String?       @map("project_owner_user_id") @db.Char(36)
+  managerUserId         String?       @map("manager_user_id") @db.Char(36)
   technicalOwnerUserId  String?       @map("technical_owner_user_id") @db.Char(36)
   startDate             DateTime?     @map("start_date") @db.Date
   expectedDeliveryDate  DateTime?     @map("expected_delivery_date") @db.Date
@@ -381,7 +437,15 @@ model Project {
   createdAt             DateTime      @default(now()) @map("created_at")
   updatedAt             DateTime      @updatedAt @map("updated_at")
   archivedAt            DateTime?     @map("archived_at")
-  client                Client        @relation(fields: [clientId], references: [id])
+  client                Client?       @relation(fields: [clientId], references: [id])
+  family                ProjectFamily? @relation(fields: [familyId], references: [id])
+  department            Department?   @relation(fields: [departmentId], references: [id])
+  owner                 User?         @relation("ProjectOwner", fields: [projectOwnerUserId], references: [id])
+  manager               User?         @relation("ProjectManager", fields: [managerUserId], references: [id])
+  technicalOwner        User?         @relation("ProjectTechnicalOwner", fields: [technicalOwnerUserId], references: [id])
+  createdBy             User?         @relation("ProjectCreator", fields: [createdById], references: [id])
+  members               ProjectMember[]
+  modules               ProjectModule[]
   originatingLead       Lead?         @relation(fields: [originatingLeadId], references: [id])
   meetings              Meeting[]
   followUps            FollowUp[]
@@ -398,20 +462,62 @@ model Project {
 model Task {
   id             String       @id @default(uuid()) @db.Char(36)
   projectId      String       @map("project_id") @db.Char(36)
+  moduleId       String?      @map("module_id") @db.Char(36)
   title          String       @db.VarChar(200)
   description    String?      @db.Text
   assignedUserId String?      @map("assigned_user_id") @db.Char(36)
   createdById    String?      @map("created_by") @db.Char(36)
   status         TaskStatus   @default(TODO)
   priority       TaskPriority @default(MEDIUM)
+  startDate      DateTime?    @map("start_date") @db.Date
+  targetRelease  String?      @map("target_release") @db.VarChar(80)
   dueAt          DateTime?    @map("due_at")
   completedAt    DateTime?    @map("completed_at")
   completionNote String?      @map("completion_note") @db.Text
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
   project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  module         ProjectModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
   @@index([projectId, status])
   @@map("tasks")
+}
+
+model ProjectMember {
+  id             String   @id @default(uuid()) @db.Char(36)
+  projectId      String   @map("project_id") @db.Char(36)
+  userId         String   @map("user_id") @db.Char(36)
+  projectRole    String   @map("project_role") @db.VarChar(80)
+  mentorUserId   String?  @map("mentor_user_id") @db.Char(36)
+  joinedAt       DateTime @default(now()) @map("joined_at")
+  expectedEndAt  DateTime? @map("expected_end_at")
+  leftAt         DateTime? @map("left_at")
+  status         String   @default("ACTIVE") @db.VarChar(30)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mentor         User?    @relation("ProjectMentor", fields: [mentorUserId], references: [id])
+  @@unique([projectId, userId])
+  @@index([userId, status])
+  @@map("project_members")
+}
+
+model ProjectModule {
+  id          String   @id @default(uuid()) @db.Char(36)
+  projectId   String   @map("project_id") @db.Char(36)
+  name        String   @db.VarChar(160)
+  description String?  @db.Text
+  ownerUserId String?  @map("owner_user_id") @db.Char(36)
+  status      String   @default("PLANNED") @db.VarChar(30)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  owner       User?    @relation("ModuleOwner", fields: [ownerUserId], references: [id])
+  tasks       Task[]
+  @@unique([projectId, name])
+  @@index([projectId, sortOrder])
+  @@map("project_modules")
 }
 
 model Milestone {

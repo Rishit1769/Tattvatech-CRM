@@ -2,14 +2,16 @@ import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/db/prisma";
 import { apiError } from "@/lib/api/response";
+import { projectVisibilityWhere } from "@/lib/projects/access";
 
 export async function GET() {
   try {
-    await requirePermission("dashboard.view");
+    const user = await requirePermission("dashboard.view");
+    const projectScope = await projectVisibilityWhere(user.id);
     const [activeLeads, pipeline, activeProjects, received, openIncidents, runningDemos] = await Promise.all([
       prisma.lead.count({ where: { archivedAt: null, stage: { notIn: ["WON", "LOST"] } } }),
       prisma.lead.aggregate({ where: { archivedAt: null, stage: { notIn: ["WON", "LOST"] } }, _sum: { expectedValue: true } }),
-      prisma.project.count({ where: { archivedAt: null, status: { in: ["PLANNING", "ACTIVE", "BLOCKED", "WAITING_CLIENT", "ON_HOLD"] } } }),
+      prisma.project.count({ where: { AND: [projectScope, { status: { in: ["PLANNING", "ACTIVE", "BLOCKED", "WAITING_CLIENT", "ON_HOLD"] } }] } }),
       prisma.transaction.aggregate({ where: { type: "PAYMENT_RECEIVED", status: { not: "VOID" } }, _sum: { amount: true } }),
       prisma.incident.count({ where: { status: { not: "RESOLVED" } } }),
       prisma.demoEnvironment.count({ where: { status: { in: ["REQUESTED", "STARTING", "RUNNING"] } } }),
