@@ -31,5 +31,10 @@ for (const permission of permissions.filter((item) => businessKeys.has(item.key)
 const technical = await prisma.role.findUniqueOrThrow({ where: { name: "Technical" } });
 const technicalKeys = new Set(["dashboard.view", "infrastructure.view", "infrastructure.manage", "infrastructure.incident.manage", "infrastructure.demo.launch", "infrastructure.demo.stop", "project.view", "task.view", "task.create"]);
 for (const permission of permissions.filter((item) => technicalKeys.has(item.key))) await prisma.rolePermission.upsert({ where: { roleId_permissionId: { roleId: technical.id, permissionId: permission.id } }, update: {}, create: { roleId: technical.id, permissionId: permission.id } });
+const admin = await prisma.role.findUniqueOrThrow({ where: { name: "Admin" } });
+for (const permission of permissions) await prisma.rolePermission.upsert({ where: { roleId_permissionId: { roleId: admin.id, permissionId: permission.id } }, update: {}, create: { roleId: admin.id, permissionId: permission.id } });
+const member = await prisma.role.findUniqueOrThrow({ where: { name: "Member" } });
+const memberReadKeys = new Set(["dashboard.view", "lead.view", "client.view", "meeting.view", "follow_up.view", "project.view", "task.view", "finance.view", "finance.invoice.view", "infrastructure.view"]);
+for (const permission of permissions.filter((item) => memberReadKeys.has(item.key))) await prisma.rolePermission.upsert({ where: { roleId_permissionId: { roleId: member.id, permissionId: permission.id } }, update: {}, create: { roleId: member.id, permissionId: permission.id } });
 console.log("Foundation seed applied. Create an initial user with npm run db:create-user.");
 await prisma.$disconnect();

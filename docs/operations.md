@@ -65,3 +65,6 @@ Store only work-relevant contact information. Do not place real student records 
 6. Temporary demos
 
 A demo must never consume enough resources to take down a core service.
+## Permission bootstrap
+
+`npm run db:seed` is idempotent and creates the system permission catalog plus role assignments. It gives `Admin` all catalog permissions and gives `Member` read-only access to the workspace modules. Review this policy before applying it to a shared or production database; use an explicit `DATABASE_URL` and a maintenance window.
