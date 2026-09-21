@@ -4,7 +4,7 @@
 
 Inspected the live [TattvaTech website](https://tattvatech.co.in/) and its published stylesheet `/assets/styles-_JVFCQMA.css` on 21 September 2026. The reference uses warm ivory, cream, deep brown-black ink, orange/copper accents, Inter body typography, Instrument Serif display typography, uppercase tracked labels, numbered structures, and fine architectural borders. Its marketing pages also use gradients, oversized media, and pill-shaped CTAs.
 
-The workspace translates that identity into a quieter operational interface: flat ink buttons, four-pixel control radii, connected metric cells, responsive records tables, and consistent form panels. Marketing gradients, animated grids, and decorative media are deliberately omitted per the redesign brief.
+The workspace translates that identity into an operational interface: sunset-gradient primary actions, warm shadows on grouped surfaces, connected metric cells, responsive records tables, and consistent form panels. Decorative marketing video and custom-cursor behavior stay out of the CRM because they do not improve record management; brand gradients, scroll progress, and restrained reveal motion are shared.
 
 ## Tokens
 
@@ -23,7 +23,7 @@ The source of truth is `src/app/globals.css`. Brand-derived values:
 
 Surface, stronger control borders, and muted semantic success/warning/danger tokens are workspace extensions. Small accent text uses deep orange rather than the brighter decorative orange. Status is always communicated with a text label, not color alone.
 
-Inter (400, 500, 600) and Instrument Serif (400) are self-hosted in `public/fonts`, with SIL Open Font License notices. Pages do not make third-party font requests. Monospace is reserved for references and technical metadata.
+Inter (400, 500, 600), Instrument Serif (400), and Cormorant Garamond (400) are self-hosted in `public/fonts`, with SIL Open Font License notices. Pages do not make third-party font requests. Monospace is reserved for references and technical metadata.
 
 ## Component boundaries
 
@@ -40,7 +40,7 @@ Use real headings, labels, native controls, and semantic tables. Do not add deco
 - 1440px desktop: persistent sidebar, wide editorial header, connected three-column metrics, records beside a 320px form panel.
 - Under 1200px: records and forms stack.
 - Under 768px: navigation becomes a disclosure, metrics become two columns, and table cells become labeled stacked rows.
-- 44px minimum control height, visible keyboard focus, restrained 180ms state transitions, reduced-motion support.
+- 44px minimum control height, visible keyboard focus, restrained 180–220ms state transitions, sunset-gradient primary actions, fixed scroll progress, and reduced-motion support.
 - Loading never masquerades as an empty result. Errors are live alerts; saves are status messages; pending actions disable duplicate submissions.
 - Search is debounced and aborts obsolete requests.
 
