@@ -22,6 +22,8 @@ const envSchema = z.object({
   MINIO_USE_SSL: z.coerce.boolean().default(false),
   MINIO_ACCESS_KEY: z.string().optional(),
   MINIO_SECRET_KEY: z.string().optional(),
+  MINIO_ROOT_USER: z.string().optional(),
+  MINIO_ROOT_PASSWORD: z.string().optional(),
   MINIO_BUCKET: z.string().default("tattvatech-private"),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
 });
@@ -48,6 +50,8 @@ export const env = envSchema.parse({
   MINIO_USE_SSL: process.env.MINIO_USE_SSL,
   MINIO_ACCESS_KEY: process.env.MINIO_ACCESS_KEY,
   MINIO_SECRET_KEY: process.env.MINIO_SECRET_KEY,
+  MINIO_ROOT_USER: process.env.MINIO_ROOT_USER,
+  MINIO_ROOT_PASSWORD: process.env.MINIO_ROOT_PASSWORD,
   MINIO_BUCKET: process.env.MINIO_BUCKET,
   MAX_UPLOAD_BYTES: process.env.MAX_UPLOAD_BYTES,
 });

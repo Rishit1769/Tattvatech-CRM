@@ -3,8 +3,10 @@ import { env } from "@/lib/config/env";
 
 let client: Minio.Client | null = null;
 function getClient() {
-  if (!env.MINIO_ENDPOINT || !env.MINIO_ACCESS_KEY || !env.MINIO_SECRET_KEY) throw new Error("STORAGE_NOT_CONFIGURED");
-  return client ??= new Minio.Client({ endPoint: env.MINIO_ENDPOINT, port: env.MINIO_PORT, useSSL: env.MINIO_USE_SSL, accessKey: env.MINIO_ACCESS_KEY, secretKey: env.MINIO_SECRET_KEY });
+  const accessKey = env.MINIO_ACCESS_KEY ?? env.MINIO_ROOT_USER;
+  const secretKey = env.MINIO_SECRET_KEY ?? env.MINIO_ROOT_PASSWORD;
+  if (!env.MINIO_ENDPOINT || !accessKey || !secretKey) throw new Error("STORAGE_NOT_CONFIGURED");
+  return client ??= new Minio.Client({ endPoint: env.MINIO_ENDPOINT, port: env.MINIO_PORT, useSSL: env.MINIO_USE_SSL, accessKey, secretKey });
 }
 
 export async function putPrivateObject(input: { objectKey: string; contentType: string; body: Buffer }) {

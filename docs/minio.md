@@ -7,7 +7,7 @@ The private MinIO service is configured through deployment environment variables
 - Bucket: `tattvatech-private`
 - TLS: not enabled yet; keep this service private until TLS/domain exposure is configured.
 
-The application reads `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, and `MINIO_BUCKET`. Credentials are intentionally not committed. Copy the access key and secret from the server's protected `/home/tattvatech/minio/.env` into the deployment environment.
+The application reads `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL`, `MINIO_BUCKET`, and either `MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` or MinIO's standard `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`. Credentials are intentionally not committed. Copy the credentials from the server's protected `/home/tattvatech/minio/.env` into the deployment environment.
 
 Invoice PDFs and final quotation PDFs use private object keys. Transaction supporting documents use:
 
