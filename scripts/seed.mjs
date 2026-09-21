@@ -46,9 +46,9 @@ for (const [code, name] of departments) await prisma.department.upsert({ where: 
 const organizationalRoles = [["CEO", 100], ["CTO", 90], ["CFO", 80], ["CMO", 70], ["HR", 60], ["MANAGER", 50], ["EMPLOYEE", 40], ["INTERN", 30]];
 for (const [name, displayPriority] of organizationalRoles) await prisma.role.upsert({ where: { name }, update: { isSystem: true, displayPriority }, create: { name, description: `${name} organizational role`, displayPriority, isSystem: true } });
 const orgPermissions = {
-  CEO: ["dashboard.view", "project.view_all", "project.view_activity", "team.view", "finance.view", "lead.view", "client.view", "activity.view"],
+  CEO: ["dashboard.view", "project.view_all", "project.view_activity", "team.view", "finance.view", "finance.quotation.view", "finance.quotation.create", "lead.view", "client.view", "activity.view"],
   CTO: ["dashboard.view", "project.view_department", "project.create", "project.edit", "project.manage_members", "project.assign_tasks", "project.manage_modules", "project.view_activity", "task.view", "task.create", "infrastructure.view"],
-  CFO: ["dashboard.view", "project.view_all", "finance.view", "finance.invoice.view", "finance.transaction.create", "activity.view"],
+  CFO: ["dashboard.view", "project.view_all", "finance.view", "finance.transaction.view", "finance.transaction.create", "finance.transaction.attach_document", "finance.invoice.view", "finance.invoice.create", "finance.invoice.generate", "finance.invoice.download", "finance.invoice.send", "finance.quotation.view", "finance.quotation.create", "finance.quotation.edit", "finance.quotation.finalize", "finance.quotation.download", "finance.quotation.send", "activity.view"],
   CMO: ["dashboard.view", "project.view_all", "lead.view", "lead.create", "lead.edit", "client.view", "client.create", "meeting.view", "proposal.view"],
   HR: ["dashboard.view", "team.view", "team.manage", "project.view_all", "project.view_activity"],
   MANAGER: ["dashboard.view", "project.view_department", "project.create", "project.edit", "project.manage_members", "project.assign_tasks", "project.manage_modules", "project.view_activity", "task.view", "task.create", "meeting.view", "meeting.create"],
