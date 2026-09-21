@@ -7,6 +7,7 @@ import { sendEmail } from "@/lib/mail/service";
 import { apiError, unknownApiError } from "@/lib/api/response";
 import { buildInvoicePdf } from "@/lib/invoices/pdf";
 import { queueInvoicePdf } from "@/lib/storage/invoice-storage";
+import { removePrivateObject } from "@/lib/storage/minio";
 
 export async function GET() {
   try {
@@ -34,7 +35,16 @@ export async function POST(request: Request) {
       const invoiceNumber = `TT-INV-${invoiceDate.getUTCFullYear()}-${randomUUID().slice(0, 8).toUpperCase()}`;
       const invoice = await prisma.invoice.create({ data: { invoiceNumber, clientId: client.id, invoiceDate, subtotal: amount, total: amount, billingSnapshot: { companyName: body.companyName, clientName: client.name, clientEmail: client.email, notes: body.notes ?? null }, generatedById: user.id, items: { create: { description: product, quantity: 1, unitPrice: amount, lineTotal: amount } } }, include: { items: true, client: true } });
       const pdf = buildInvoicePdf({ invoiceNumber, companyName: body.companyName!, invoiceDate: body.invoiceDate!, product, amount, notes: body.notes });
-      const storage = await queueInvoicePdf({ invoiceNumber, bytes: pdf });
+      let storage: Awaited<ReturnType<typeof queueInvoicePdf>> | undefined;
+      try {
+        storage = await queueInvoicePdf({ invoiceNumber, bytes: pdf });
+        await prisma.storedFile.create({ data: { entityType: "INVOICE", entityId: invoice.id, invoiceId: invoice.id, originalFilename: `${invoiceNumber}.pdf`, objectKey: storage.objectKey, mimeType: "application/pdf", sizeBytes: pdf.length, bucketName: storage.bucketName, uploadedById: user.id } });
+      } catch (error) {
+        if (storage?.objectKey) await removePrivateObject(storage.objectKey).catch(() => undefined);
+        await prisma.invoice.delete({ where: { id: invoice.id } }).catch(() => undefined);
+        if (error instanceof Error && error.message === "STORAGE_NOT_CONFIGURED") return apiError("Document storage is not configured. The invoice was not saved.", 503);
+        throw error;
+      }
       await recordActivity({ activityType: "invoice.generated", actorUserId: user.id, entityType: "invoice", entityId: invoice.id, summary: `${user.fullName} generated ${invoice.invoiceNumber}.` });
       return NextResponse.json({ invoice, storage, pdf: { generated: true, bytes: pdf.length } }, { status: 201 });
     }

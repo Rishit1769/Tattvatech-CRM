@@ -19,6 +19,7 @@
   "dependencies": {
     "@prisma/client": "^6.16.2",
     "bcryptjs": "^3.0.2",
+    "minio": "^8.0.7",
     "next": "^15.5.0",
     "nodemailer": "^7.0.6",
     "react": "^19.1.0",

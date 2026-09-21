@@ -1,11 +1,5 @@
-export type InvoiceStorageResult = { provider: "minio"; status: "DEFERRED"; objectKey: string };
+import { putPrivateObject } from "@/lib/storage/minio";
 
-/**
- * MinIO is intentionally not connected yet. Keeping this adapter boundary means
- * invoice generation can be tested now and the upload can be enabled later
- * without changing the finance API or storing PDF bytes in MySQL.
- */
-export async function queueInvoicePdf(input: { invoiceNumber: string; bytes: Buffer }): Promise<InvoiceStorageResult> {
-  void input.bytes;
-  return { provider: "minio", status: "DEFERRED", objectKey: `invoices/${input.invoiceNumber}.pdf` };
+export async function queueInvoicePdf(input: { invoiceNumber: string; bytes: Buffer }) {
+  return putPrivateObject({ objectKey: `invoices/${new Date().getUTCFullYear()}/${String(new Date().getUTCMonth() + 1).padStart(2, "0")}/${input.invoiceNumber}/${input.invoiceNumber}.pdf`, contentType: "application/pdf", body: input.bytes });
 }

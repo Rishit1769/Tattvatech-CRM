@@ -15,7 +15,7 @@ const permissionData = [
   ["follow_up.view", "View follow-ups"], ["follow_up.create", "Create follow-ups"], ["follow_up.edit", "Edit follow-ups"],
   ["proposal.view", "View proposals"], ["proposal.create", "Create proposals"],
   ["project.view", "View projects"], ["project.create", "Create projects"], ["project.view_all", "View all company projects"], ["project.view_department", "View department projects"], ["project.view_assigned", "View assigned projects"], ["project.edit", "Edit projects"], ["project.archive", "Archive projects"], ["project.manage_members", "Manage project members"], ["project.assign_tasks", "Assign project tasks"], ["project.manage_modules", "Manage project modules"], ["project.manage_milestones", "Manage project milestones"], ["project.view_activity", "View project activity"], ["project.upload_documents", "Upload project documents"], ["task.view", "View tasks"], ["task.create", "Create tasks"],
-  ["finance.view", "View finance"], ["finance.transaction.create", "Create transactions"], ["finance.invoice.view", "View invoices"],
+  ["finance.view", "View finance"], ["finance.transaction.view", "View transactions"], ["finance.transaction.create", "Create transactions"], ["finance.transaction.attach_document", "Attach transaction documents"], ["finance.invoice.view", "View invoices"], ["finance.invoice.create", "Create invoices"], ["finance.invoice.generate", "Generate invoices"], ["finance.invoice.download", "Download invoices"], ["finance.invoice.send", "Send invoices"], ["finance.quotation.view", "View quotations"], ["finance.quotation.create", "Create quotations"], ["finance.quotation.edit", "Edit quotations"], ["finance.quotation.finalize", "Finalize quotations"], ["finance.quotation.download", "Download quotations"], ["finance.quotation.send", "Send quotations"],
   ["infrastructure.view", "View infrastructure"], ["infrastructure.manage", "Manage infrastructure"], ["infrastructure.incident.manage", "Manage incidents"],
   ["infrastructure.demo.launch", "Launch demo environments"], ["infrastructure.demo.stop", "Stop demo environments"],
 ];
@@ -43,8 +43,8 @@ const departments = [
 ];
 for (const [code, name] of departments) await prisma.department.upsert({ where: { code }, update: { name }, create: { code, name } });
 
-const organizationalRoles = ["CEO", "CTO", "CFO", "CMO", "HR", "MANAGER", "EMPLOYEE", "INTERN"];
-for (const name of organizationalRoles) await prisma.role.upsert({ where: { name }, update: { isSystem: true }, create: { name, description: `${name} organizational role`, isSystem: true } });
+const organizationalRoles = [["CEO", 100], ["CTO", 90], ["CFO", 80], ["CMO", 70], ["HR", 60], ["MANAGER", 50], ["EMPLOYEE", 40], ["INTERN", 30]];
+for (const [name, displayPriority] of organizationalRoles) await prisma.role.upsert({ where: { name }, update: { isSystem: true, displayPriority }, create: { name, description: `${name} organizational role`, displayPriority, isSystem: true } });
 const orgPermissions = {
   CEO: ["dashboard.view", "project.view_all", "project.view_activity", "team.view", "finance.view", "lead.view", "client.view", "activity.view"],
   CTO: ["dashboard.view", "project.view_department", "project.create", "project.edit", "project.manage_members", "project.assign_tasks", "project.manage_modules", "project.view_activity", "task.view", "task.create", "infrastructure.view"],

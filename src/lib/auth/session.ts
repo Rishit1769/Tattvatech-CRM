@@ -44,6 +44,7 @@ export type CurrentUser = Pick<User, "id" | "fullName" | "email" | "status"> & {
   role: { id: string; name: string };
   roles: string[];
   department: string | null;
+  financeAccess: boolean;
   forcePasswordChange: boolean;
 };
 
@@ -54,7 +55,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   const session = await prisma.session.findFirst({
     where: { sessionTokenHash: hashToken(token), revokedAt: null, expiresAt: { gt: new Date() }, user: { status: "ACTIVE" } },
-    include: { user: { include: { role: true, userRoles: { include: { role: true } }, department: true } } },
+    include: { user: { include: { role: { include: { permissions: { include: { permission: true } } } }, userRoles: { include: { role: { include: { permissions: { include: { permission: true } } } } } }, department: true } } },
   });
   const user = session?.user
     ? {
@@ -63,8 +64,9 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
         email: session.user.email,
         status: session.user.status,
         role: { id: session.user.role.id, name: session.user.role.name },
-        roles: [...new Set(session.user.userRoles.map((assignment) => assignment.role.name))],
+        roles: [...new Map([[session.user.role.name, session.user.role.displayPriority], ...session.user.userRoles.map((assignment) => [assignment.role.name, assignment.role.displayPriority] as const)]).entries()].sort((a, b) => b[1] - a[1]).map(([name]) => name),
         department: session.user.department?.name ?? null,
+        financeAccess: [...session.user.role.permissions, ...session.user.userRoles.flatMap((assignment) => assignment.role.permissions)].some((item) => item.permission.key === "finance.view"),
         forcePasswordChange: session.user.forcePasswordChange,
       }
     : null;

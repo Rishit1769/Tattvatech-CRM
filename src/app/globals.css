@@ -80,6 +80,12 @@ a { text-underline-offset: 4px; }
 .nav-item { display: flex; align-items: center; gap: 14px; padding: 11px 12px; min-height: 44px; border: 1px solid transparent; border-radius: var(--radius-pill); color: var(--foreground-muted); }
 .nav-item .mono { font-size: 10px; color: var(--foreground-subtle); }
 .nav-item:hover { background: var(--surface-hover); color: var(--foreground); }
+.nav-item.is-active { background: color-mix(in oklab, var(--orange) 12%, transparent); color: var(--orange-deep); }
+.nav-group-wrap { display: grid; gap: 2px; }
+.nav-chevron { width: 12px; color: var(--orange); }
+.nav-children { display: grid; gap: 2px; margin: 0 0 6px 40px; border-left: 1px solid var(--border-strong); padding-left: 10px; }
+.nav-child { padding: 8px 10px; border-radius: var(--radius); color: var(--foreground-muted); font-size: 12px; }
+.nav-child:hover, .nav-child[aria-current="page"] { color: var(--orange-deep); background: color-mix(in oklab, var(--orange) 10%, transparent); }
 .nav-item[aria-current=page] { background: color-mix(in oklab, var(--orange) 12%, transparent); border-color: color-mix(in oklab, var(--orange) 20%, transparent); color: var(--accent-hover); font-weight: 600; }
 .account { margin-top: auto; padding: 28px 12px 0; }
 .account-details { padding-top: 20px; border-top: 1px solid var(--border); margin-bottom: 14px; overflow-wrap: anywhere; }

@@ -112,6 +112,7 @@ model Role {
   id          String           @id @default(uuid()) @db.Char(36)
   name        String           @unique @db.VarChar(80)
   description String?          @db.VarChar(255)
+  displayPriority Int          @default(0) @map("display_priority")
   isSystem    Boolean          @default(false) @map("is_system")
   legacyUsers User[]           @relation("LegacyUserRole")
   userRoles   UserRole[]
@@ -393,6 +394,7 @@ model Proposal {
   lead            Lead?    @relation(fields: [leadId], references: [id])
   client          Client?  @relation(fields: [clientId], references: [id])
   project         Project? @relation(fields: [projectId], references: [id])
+  documents       StoredFile[]
   @@index([proposalNumber])
   @@map("proposals")
 }
@@ -563,6 +565,7 @@ model Transaction {
   project           Project?          @relation(fields: [projectId], references: [id])
   amc               AmcContract?     @relation(fields: [amcId], references: [id])
   invoice           Invoice?
+  documents         StoredFile[]
   @@index([transactionDate, type])
   @@index([clientId])
   @@index([referenceNumber])
@@ -592,7 +595,30 @@ model Invoice {
   client            Client        @relation(fields: [clientId], references: [id])
   project           Project?      @relation(fields: [projectId], references: [id])
   items             InvoiceItem[]
+  documents         StoredFile[]
   @@map("invoices")
+}
+
+model StoredFile {
+  id               String   @id @default(uuid()) @db.Char(36)
+  entityType       String   @map("entity_type") @db.VarChar(40)
+  entityId         String   @map("entity_id") @db.Char(36)
+  transactionId    String?  @map("transaction_id") @db.Char(36)
+  invoiceId        String?  @map("invoice_id") @db.Char(36)
+  proposalId       String?  @map("proposal_id") @db.Char(36)
+  originalFilename String   @map("original_filename") @db.VarChar(255)
+  objectKey        String   @unique @map("object_key") @db.VarChar(500)
+  mimeType         String   @map("mime_type") @db.VarChar(120)
+  sizeBytes        Int      @map("size_bytes")
+  bucketName       String   @map("bucket_name") @db.VarChar(120)
+  uploadedById     String   @map("uploaded_by") @db.Char(36)
+  uploadedAt       DateTime @default(now()) @map("uploaded_at")
+  transaction      Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  invoice          Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  proposal         Proposal? @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  @@index([entityType, entityId])
+  @@index([transactionId])
+  @@map("files")
 }
 
 model InvoiceItem {

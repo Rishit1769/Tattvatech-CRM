@@ -17,6 +17,13 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
   SMTP_FROM: z.string().default("TattvaTech CRM <crm@example.com>"),
+  MINIO_ENDPOINT: z.string().optional(),
+  MINIO_PORT: z.coerce.number().int().positive().default(9000),
+  MINIO_USE_SSL: z.coerce.boolean().default(false),
+  MINIO_ACCESS_KEY: z.string().optional(),
+  MINIO_SECRET_KEY: z.string().optional(),
+  MINIO_BUCKET: z.string().default("tattvatech-private"),
+  MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
 });
 
 export const env = envSchema.parse({
@@ -36,4 +43,11 @@ export const env = envSchema.parse({
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASSWORD: process.env.SMTP_PASSWORD,
   SMTP_FROM: process.env.SMTP_FROM,
+  MINIO_ENDPOINT: process.env.MINIO_ENDPOINT,
+  MINIO_PORT: process.env.MINIO_PORT,
+  MINIO_USE_SSL: process.env.MINIO_USE_SSL,
+  MINIO_ACCESS_KEY: process.env.MINIO_ACCESS_KEY,
+  MINIO_SECRET_KEY: process.env.MINIO_SECRET_KEY,
+  MINIO_BUCKET: process.env.MINIO_BUCKET,
+  MAX_UPLOAD_BYTES: process.env.MAX_UPLOAD_BYTES,
 });

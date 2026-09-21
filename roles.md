@@ -18,6 +18,28 @@ The legacy `User.roleId` remains as a compatibility/default role for existing ac
 
 ## Organizational roles
 
+### Official display hierarchy
+
+```text
+CEO
+ ↓
+CTO
+ ↓
+CFO
+ ↓
+CMO
+ ↓
+HR
+ ↓
+MANAGER
+ ↓
+EMPLOYEE
+ ↓
+INTERN
+```
+
+This is organizational/display rank only. It does not silently grant a higher role the permissions of every lower role. RBAC permissions and multiple-role assignments remain the only source of access decisions. The `roles.display_priority` column stores this order (`CEO=100` through `INTERN=30`), and session role lists are sorted by that value before being rendered.
+
 The initial roles are `CEO`, `CTO`, `CFO`, `CMO`, `HR`, `MANAGER`, `EMPLOYEE`, and `INTERN`. Roles are persisted in `roles`; assignments are persisted in `user_roles` with a uniqueness constraint on `(user_id, role_id)`. A user can hold several roles at once. Permissions are the union of permissions granted by all active roles; a restrictive-sounding role is not an implicit deny.
 
 | Role | Primary responsibility | Typical visibility |

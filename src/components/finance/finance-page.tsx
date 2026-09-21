@@ -6,9 +6,9 @@ type Transaction = { id: string; transactionNumber: string; type: string; amount
 type Client = { id: string; name: string };
 type Quotation = { id: string; proposalNumber: string; title: string; status: string; amount: string | null; currency: string; client?: { name: string; email: string | null } | null; project?: { name: string } | null; sentAt: string | null; acceptedAt: string | null };
 const products = ["CRM", "Custom Software", "Custom Automation", "Whatsapp Bot", "Website", "ERP"];
-export function FinancePage() {
-  const [view, setView] = useState<"transactions" | "quotations" | "invoice">("transactions");
-  const [form, setForm] = useState({ type: "PAYMENT_RECEIVED", clientId: "", amount: "", transactionDate: new Date().toISOString().slice(0, 10), paymentMethod: "Bank transfer", description: "" });
+export function FinancePage({ initialView = "transactions" }: { initialView?: "transactions" | "quotations" | "invoice" }) {
+  const [view, setView] = useState<"transactions" | "quotations" | "invoice">(initialView);
+  const [form, setForm] = useState({ type: "PAYMENT_RECEIVED", clientId: "", projectId: "", amount: "", transactionDate: new Date().toISOString().slice(0, 10), paymentMethod: "Bank transfer", referenceNumber: "", description: "", document: null as File | null });
   const [invoiceForm, setInvoiceForm] = useState({ companyName: "", clientId: "", invoiceDate: new Date().toISOString().slice(0, 10), product: products[0], amount: "", notes: "" });
   const [invoiceState, setInvoiceState] = useState<{ loading: boolean; message?: string; error?: string }>({ loading: false });
   const clients = useResource<Client[]>("/api/clients", "clients");
@@ -32,13 +32,15 @@ export function FinancePage() {
       { label: "Amount", render: (record) => <><p className="mono">{money(record.amount, record.currency)}</p><p className="record-meta">{new Date(record.transactionDate).toLocaleDateString("en-IN")}</p></> },
       { label: "Status", render: (record) => <StatusBadge status={record.status} /> },
     ]}
-    form={(reload) => <CreateForm title="Record transaction" endpoint="/api/finance/transactions" payload={() => ({ ...form, amount: Number(form.amount), clientId: form.clientId || undefined })} reset={() => setForm({ ...form, amount: "", description: "" })} reload={reload} submitLabel="Save transaction ↗">
+    form={(reload) => <CreateForm title="Record transaction" endpoint="/api/finance/transactions" payload={() => { const payload = new FormData(); payload.set("type", form.type); payload.set("clientId", form.clientId); payload.set("projectId", form.projectId); payload.set("amount", form.amount); payload.set("transactionDate", form.transactionDate); payload.set("paymentMethod", form.paymentMethod); payload.set("referenceNumber", form.referenceNumber); payload.set("description", form.description); if (form.document) payload.set("document", form.document); return payload; }} reset={() => setForm({ ...form, amount: "", description: "", referenceNumber: "", document: null })} reload={reload} submitLabel="Save transaction ↗">
       <Field label="Type *"><Select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>{["PAYMENT_RECEIVED", "EXPENSE", "REFUND", "TRANSFER", "OTHER_INCOME", "OTHER"].map((type) => <option value={type} key={type}>{humanize(type)}</option>)}</Select></Field>
       {clients.error && <Notice>Client choices could not be loaded. Refresh the page to retry.</Notice>}
       <Field label={`Client${form.type === "PAYMENT_RECEIVED" ? " *" : ""}`} hint="Required for received payments."><Select required={form.type === "PAYMENT_RECEIVED"} value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })}><option value="">{clients.loading ? "Loading clients…" : "Select client"}</option>{clients.data?.map((client) => <option value={client.id} key={client.id}>{client.name}</option>)}</Select></Field>
       <Field label="Amount (INR) *"><Input required type="number" min="0.01" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></Field>
       <Field label="Date *"><Input required type="date" value={form.transactionDate} onChange={(e) => setForm({ ...form, transactionDate: e.target.value })} /></Field>
       <Field label="Payment method"><Input maxLength={60} value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} /></Field>
+      <Field label="Reference / UTR"><Input maxLength={120} value={form.referenceNumber} onChange={(e) => setForm({ ...form, referenceNumber: e.target.value })} /></Field>
       <Field label="Description"><textarea className="input" rows={3} maxLength={5000} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+      <Field label="Supporting document" hint="Optional · PDF, JPEG, JPG, or PNG · max 10 MB"><Input type="file" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" onChange={(e) => setForm({ ...form, document: e.target.files?.[0] ?? null })} /></Field>
     </CreateForm>} />;
 }

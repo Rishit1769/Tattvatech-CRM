@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNod
 import { Button, DataTable, EmptyState, Field, Input, LoadingSkeleton, Notice, PageHeader, SectionHeader, type Column } from "./primitives";
 
 export async function jsonRequest(url: string, options?: RequestInit) {
-  const response = await fetch(url, { ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
+  const isFormData = options?.body instanceof FormData;
+  const response = await fetch(url, { ...options, headers: isFormData ? options?.headers : { "Content-Type": "application/json", ...options?.headers } });
   const data = await response.json().catch(() => null);
   if (!response.ok) throw new Error(data?.error ?? "The request could not be completed. Please try again.");
   if (!data) throw new Error("The server returned an invalid response.");
@@ -51,7 +52,7 @@ export function CreateForm({ title, description = "Fields marked * are required.
   async function submit(event: FormEvent) {
     event.preventDefault(); if (pending) return;
     setPending(true); setError(""); setSuccess(false);
-    try { await jsonRequest(endpoint, { method: "POST", body: JSON.stringify(payload()) }); reset(); setSuccess(true); await reload(); }
+    try { const requestBody = payload(); await jsonRequest(endpoint, { method: "POST", body: requestBody instanceof FormData ? requestBody : JSON.stringify(requestBody) }); reset(); setSuccess(true); await reload(); }
     catch (e) { setError(e instanceof Error ? e.message : "Unable to save. Please try again."); }
     finally { setPending(false); }
   }
