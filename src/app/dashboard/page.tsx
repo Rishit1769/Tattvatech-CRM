@@ -6,6 +6,7 @@ import { DashboardMetrics } from "@/components/dashboard/dashboard-metrics";
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (user.forcePasswordChange) redirect("/change-password");
 
   return (
     <WorkspaceShell user={user}>
