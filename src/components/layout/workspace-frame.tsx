@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 
 const navigation = [
-  ["Overview", "/dashboard"], ["Leads", "/leads"], ["Clients", "/clients"], ["Projects", "/projects"], ["Finance", "/finance"], ["Meetings", "/meetings"], ["Follow-ups", "/follow-ups"], ["Infrastructure", "/infrastructure"], ["Demo environments", "/infrastructure/demos"], ["Search", "/workspace/search"],
+  ["Overview", "/dashboard"], ["Leads", "/leads"], ["Clients", "/clients"], ["Projects", "/projects"], ["Finance", "/finance"], ["Meetings", "/meetings"], ["Follow-ups", "/follow-ups"], ["Infrastructure", "/infrastructure"],
 ];
 type WorkspaceUser = { fullName: string; role: { name: string } };
 export function WorkspaceFrame({ user, children }: { user: WorkspaceUser; children: ReactNode }) {
@@ -32,6 +32,6 @@ export function WorkspaceFrame({ user, children }: { user: WorkspaceUser; childr
         <div className="account"><div className="account-details"><p className="record-title">{user.fullName}</p><p className="record-meta">{user.role.name}</p></div><LogoutButton /></div>
       </div>
     </aside>
-    <div className="workspace-content"><header className="topbar"><p className="eyebrow">Workspace <span aria-hidden="true">/</span> {current}</p><Link href="/workspace/search" className="mono">Search <span aria-hidden="true">↗</span></Link></header><main className="workspace-main" id="main-content" tabIndex={-1}>{children}<footer className="workspace-footer"><span>TattvaTech / Internal workspace</span><span>Engineered with purpose.</span></footer></main></div>
+    <div className="workspace-content"><header className="topbar"><p className="eyebrow">Workspace <span aria-hidden="true">/</span> {current}</p></header><main className="workspace-main" id="main-content" tabIndex={-1}>{children}<footer className="workspace-footer"><span>TattvaTech / Internal workspace</span><span>Engineered with purpose.</span></footer></main></div>
   </div>;
 }
