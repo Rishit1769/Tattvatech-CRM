@@ -1,5 +1,19 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useResource } from "@/components/ui/resource";
+import { Button, LoadingSkeleton, Notice, money } from "@/components/ui/primitives";
 type Metrics = { activeLeads: number; pipelineValue: string | null; activeProjects: number; received: string | null; openIncidents: number; runningDemos: number };
-export function DashboardMetrics() { const [metrics, setMetrics] = useState<Metrics | null>(null); useEffect(() => { fetch("/api/dashboard/summary").then((response) => response.json()).then(setMetrics).catch(() => undefined); }, []); if (!metrics) return <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate">Dashboard metrics become available after database connection.</div>; return <div className="grid gap-4 md:grid-cols-3">{[["Active leads", metrics.activeLeads], ["Pipeline value", metrics.pipelineValue ? `₹${metrics.pipelineValue}` : "₹0"], ["Active projects", metrics.activeProjects], ["Received", metrics.received ? `₹${metrics.received}` : "₹0"], ["Open incidents", metrics.openIncidents], ["Running demos", metrics.runningDemos]].map(([label, value]) => <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" key={String(label)}><p className="text-sm text-slate">{label}</p><p className="mt-2 text-2xl font-semibold text-ink">{String(value)}</p></div>)}</div>; }
+export function DashboardMetrics() {
+  const { data, loading, error, reload } = useResource<Metrics>("/api/dashboard/summary");
+  if (loading) return <div className="metric-grid">{Array.from({ length: 6 }, (_, i) => <div className="metric" key={i}><LoadingSkeleton rows={1} /></div>)}</div>;
+  if (error || !data) return <Notice>{error || "Metrics unavailable."}<br /><Button variant="secondary" onClick={() => void reload()}>Try again</Button></Notice>;
+  const metrics = [
+    ["Active leads", data.activeLeads, "Explore pipeline", "/leads"],
+    ["Pipeline value", money(data.pipelineValue), "Open opportunities", "/leads"],
+    ["Active projects", data.activeProjects, "View delivery", "/projects"],
+    ["Received · all time", money(data.received), "View transactions", "/finance"],
+    ["Open incidents", data.openIncidents, "View infrastructure", "/infrastructure"],
+    ["Active demo requests", data.runningDemos, "Requested, starting & running", "/infrastructure/demos"],
+  ];
+  return <div className="metric-grid">{metrics.map(([label, value, hint, href], index) => <article className="metric" key={String(label)}><div className="metric-top"><span className="mono">{String(index + 1).padStart(2, "0")}</span><h3 className="eyebrow">{label}</h3></div><p className="metric-value">{value}</p><Link href={String(href)}>{hint}<span aria-hidden="true">↗</span></Link></article>)}</div>;
+}

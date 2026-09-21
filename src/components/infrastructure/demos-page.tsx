@@ -1,5 +1,29 @@
 "use client";
-
-import { FormEvent, useEffect, useState } from "react";
+import { useState } from "react";
+import { CreateForm, jsonRequest, useResource } from "@/components/ui/resource";
+import { Button, DataTable, EmptyState, Field, LoadingSkeleton, Notice, PageHeader, SectionHeader, Select, StatusBadge } from "@/components/ui/primitives";
 type Demo = { id: string; templateKey: string; status: string; expiresAt: string; sampleProfile: string | null };
-export function DemosPage() { const [demos, setDemos] = useState<Demo[]>([]); const [templateKey, setTemplateKey] = useState("school-erp"); const [message, setMessage] = useState(""); async function load() { const response = await fetch("/api/infrastructure/demos"); const data = await response.json(); if (!response.ok) throw new Error(data.error); setDemos(data.demos); } useEffect(() => { void load().catch((e) => setMessage(e.message)); }, []); async function submit(event: FormEvent) { event.preventDefault(); try { const response = await fetch("/api/infrastructure/demos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ templateKey, expiryHours: 6 }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); setMessage(data.message); await load(); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to request demo"); } } async function stop(id: string) { await fetch(`/api/infrastructure/demos/${id}/stop`, { method: "POST" }); await load(); } return <section className="space-y-6"><div><p className="text-sm font-medium text-brand-600">Infrastructure</p><h1 className="text-3xl font-semibold text-ink">Demo environments</h1><p className="mt-2 text-slate">Temporary, synthetic-data demos with explicit expiry and capacity protection.</p></div><form onSubmit={submit} className="flex max-w-xl gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><select className="flex-1 rounded-lg border border-slate-300 px-3 py-2" value={templateKey} onChange={(e) => setTemplateKey(e.target.value)}><option value="school-erp">School ERP</option><option value="college-erp">College ERP</option><option value="custom">Custom</option></select><button className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white" type="submit">Request demo</button></form>{message && <p className="text-sm text-slate">{message}</p>}<div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">{demos.length === 0 ? <p className="p-5 text-sm text-slate">No demo environments recorded.</p> : demos.map((demo) => <div className="flex items-center justify-between gap-4 p-5" key={demo.id}><div><p className="font-medium text-ink">{demo.templateKey}</p><p className="text-sm text-slate">Expires {new Date(demo.expiresAt).toLocaleString()} · {demo.sampleProfile}</p></div><div className="flex items-center gap-3"><span className="rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700">{demo.status}</span>{!["STOPPED", "EXPIRED"].includes(demo.status) && <button className="text-sm font-medium text-red-600" onClick={() => void stop(demo.id)}>Stop</button>}</div></div>)}</div></section>; }
+export function DemosPage() {
+  const { data: demos, loading, error, reload } = useResource<Demo[]>("/api/infrastructure/demos", "demos");
+  const [templateKey, setTemplateKey] = useState("school-erp");
+  const [pendingId, setPendingId] = useState("");
+  const [confirmId, setConfirmId] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [success, setSuccess] = useState("");
+  async function stop(id: string) {
+    setPendingId(id); setActionError(""); setSuccess("");
+    try { await jsonRequest(`/api/infrastructure/demos/${id}/stop`, { method: "POST" }); setConfirmId(""); setSuccess("Stop request recorded."); await reload(); }
+    catch (e) { setActionError(e instanceof Error ? e.message : "Unable to stop demo."); }
+    finally { setPendingId(""); }
+  }
+  return <section><PageHeader eyebrow="09 / Environments" title="Space to demonstrate." description="Temporary environments with synthetic data, explicit expiry, and visible lifecycle states." />
+    <div className="work-grid"><div className="records"><SectionHeader title="Environment registry" meta={<Button variant="ghost" disabled={loading} onClick={() => void reload()}>Refresh ↻</Button>} />
+      {(error || actionError) && <Notice>{error || actionError}</Notice>}{success && <Notice success>{success}</Notice>}
+      {loading ? <LoadingSkeleton /> : !error && (!demos?.length ? <EmptyState title="No demo environments" description="Choose a template to request your first environment. A request is not a running deployment." /> : <DataTable rows={demos} caption="Demo environments" columns={[
+        { label: "Environment", render: (demo) => <><p className="record-title">{demo.templateKey}</p><p className="record-meta">{demo.sampleProfile || "Synthetic data"}</p></> },
+        { label: "Lifecycle", render: (demo) => <><StatusBadge status={demo.status} /><p className="record-meta">Expires {new Date(demo.expiresAt).toLocaleString("en-IN")}</p></> },
+        { label: "Actions", render: (demo) => ["STOPPED", "EXPIRED"].includes(demo.status) ? <span className="muted">—</span> : confirmId === demo.id ? <div className="form-stack"><p className="record-meta">Stop this environment?</p><Button variant="danger" disabled={!!pendingId} onClick={() => void stop(demo.id)}>{pendingId === demo.id ? "Stopping…" : "Confirm stop"}</Button><Button variant="ghost" disabled={!!pendingId} onClick={() => setConfirmId("")}>Cancel</Button></div> : <Button variant="secondary" disabled={!!pendingId} onClick={() => setConfirmId(demo.id)}>Stop</Button> },
+      ]} />)}
+    </div><CreateForm title="Request an environment" description="Select a template. Requests expire after six hours; provisioning status appears in the registry." endpoint="/api/infrastructure/demos" payload={() => ({ templateKey, expiryHours: 6 })} reset={() => undefined} reload={reload} submitLabel="Request demo ↗"><Field label="Template"><Select value={templateKey} onChange={(e) => setTemplateKey(e.target.value)}><option value="school-erp">School ERP</option><option value="college-erp">College ERP</option><option value="custom">Custom</option></Select></Field></CreateForm></div>
+  </section>;
+}

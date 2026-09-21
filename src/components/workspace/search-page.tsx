@@ -1,5 +1,27 @@
 "use client";
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { jsonRequest } from "@/components/ui/resource";
+import { EmptyState, Field, Input, LoadingSkeleton, Notice, PageHeader, humanize } from "@/components/ui/primitives";
 type Result = { type: string; id: string; label: string };
-export function SearchPage() { const [query, setQuery] = useState(""); const [results, setResults] = useState<Result[]>([]); const [error, setError] = useState(""); async function search(value: string) { setQuery(value); if (value.length < 2) return setResults([]); try { const response = await fetch(`/api/search?q=${encodeURIComponent(value)}`); const data = await response.json(); if (!response.ok) throw new Error(data.error); setResults(data.results); } catch (e) { setError(e instanceof Error ? e.message : "Search failed"); } } return <section className="space-y-6"><div><p className="text-sm font-medium text-brand-600">Workspace</p><h1 className="text-3xl font-semibold text-ink">Universal search</h1><p className="mt-2 text-slate">Search only returns records your session is allowed to access.</p></div><input className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 shadow-sm" placeholder="Search clients, projects, invoices, transactions…" value={query} onChange={(e) => void search(e.target.value)} autoFocus />{error && <p className="text-sm text-red-600">{error}</p>}<div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">{results.length === 0 ? <p className="p-5 text-sm text-slate">Enter at least two characters to search.</p> : results.map((result) => <div className="flex items-center justify-between p-5" key={`${result.type}-${result.id}`}><span className="font-medium text-ink">{result.label}</span><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate">{result.type}</span></div>)}</div></section>; }
+export function SearchPage() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Result[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    const controller = new AbortController();
+    setResults([]); setError("");
+    if (query.trim().length < 2) { setLoading(false); return () => controller.abort(); }
+    setLoading(true);
+    const timeout = setTimeout(async () => {
+      try { const data = await jsonRequest(`/api/search?q=${encodeURIComponent(query.trim())}`, { signal: controller.signal }); if (!controller.signal.aborted) setResults(data.results); }
+      catch (e) { if (!controller.signal.aborted) setError(e instanceof Error ? e.message : "Search failed."); }
+      finally { if (!controller.signal.aborted) setLoading(false); }
+    }, 250);
+    return () => { clearTimeout(timeout); controller.abort(); };
+  }, [query]);
+  return <section><PageHeader eyebrow="10 / Workspace" title="Find the thread." description="Look up clients, projects, invoices, and transactions from one place." />
+    <Field label="Search workspace" hint="Enter at least two characters."><Input type="search" className="search-input" placeholder="A name, project, or reference…" value={query} onChange={(e) => setQuery(e.target.value)} /></Field>
+    <div className="search-list">{error && <Notice>{error}</Notice>}{loading ? <LoadingSkeleton /> : !error && (results.length ? <><p role="status" className="record-meta">{results.length} results</p>{results.map((result) => <div className="search-result" key={`${result.type}-${result.id}`}><p className="record-title">{result.label}</p><span className="badge">{humanize(result.type)}</span></div>)}</> : <EmptyState title={query.trim().length < 2 ? "Start with a name" : "No results found"} description={query.trim().length < 2 ? "Search brings related records into view." : "Try a different name or a shorter reference."} />)}</div>
+  </section>;
+}

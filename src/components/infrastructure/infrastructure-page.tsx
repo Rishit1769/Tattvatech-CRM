@@ -1,5 +1,18 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useResource } from "@/components/ui/resource";
+import { Button, EmptyState, LoadingSkeleton, Notice, PageHeader, SectionHeader, StatusBadge, humanize } from "@/components/ui/primitives";
 type Server = { id: string; name: string; ownershipClass: string; status: string; services: { name: string; status: string; isCore: boolean }[]; _count: { incidents: number } };
-export function InfrastructurePage() { const [servers, setServers] = useState<Server[]>([]); const [message, setMessage] = useState(""); useEffect(() => { fetch("/api/infrastructure/servers").then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.error); setServers(data.servers); }).catch((error) => setMessage(error.message)); }, []); return <section className="space-y-6"><div><p className="text-sm font-medium text-brand-600">Operations</p><h1 className="text-3xl font-semibold text-ink">Infrastructure</h1><p className="mt-2 text-slate">Core service visibility without turning the CRM into a separate monitoring platform.</p></div>{message && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{message}</p>}<div className="grid gap-4 md:grid-cols-2">{servers.length === 0 ? <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate">No servers registered yet.</div> : servers.map((server) => <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" key={server.id}><div className="flex items-start justify-between gap-4"><div><h2 className="font-semibold text-ink">{server.name}</h2><p className="mt-1 text-sm text-slate">{server.ownershipClass}</p></div><span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">{server.status}</span></div><div className="mt-5 space-y-2">{server.services.map((service) => <div className="flex justify-between text-sm" key={service.name}><span className={service.isCore ? "font-medium text-ink" : "text-slate"}>{service.name}</span><span className="text-slate">{service.status}</span></div>)}</div><p className="mt-4 text-xs text-slate">{server._count.incidents} open incidents</p></article>)}</div></section>; }
+export function InfrastructurePage() {
+  const { data: servers, loading, error, reload } = useResource<Server[]>("/api/infrastructure/servers", "servers");
+  return <section><PageHeader eyebrow="08 / Operations" title="Engineering, in view." description="Registered servers, core services, and their recorded operational state." action={<Link className="button button-secondary" href="/infrastructure/demos">Demo environments ↗</Link>} />
+    <SectionHeader title="Server inventory" meta={<Button variant="ghost" onClick={() => void reload()} disabled={loading}>Refresh ↻</Button>} />
+    {error && <Notice>{error}</Notice>}
+    {loading ? <LoadingSkeleton /> : !error && (!servers?.length ? <EmptyState title="No servers registered" description="Your infrastructure inventory will appear here once servers are registered." /> : <div className="service-grid">{servers.map((server) => <article className="server-panel" key={server.id}>
+      <SectionHeader title={server.name} meta={<StatusBadge status={server.status} />} /><p className="eyebrow mb-6">{humanize(server.ownershipClass)}</p>
+      <p className="eyebrow mb-4">Services / {server.services.length}</p>
+      {server.services.length ? server.services.map((service, index) => <div className="service-row" key={index}><div><p className="record-title">{service.name}</p>{service.isCore && <p className="record-meta">Core service</p>}</div><StatusBadge status={service.status} /></div>) : <p className="muted">No services registered.</p>}
+      <p className="record-meta mt-6">{server._count.incidents} recorded incidents</p>
+    </article>)}</div>)}
+  </section>;
+}

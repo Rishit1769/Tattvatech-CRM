@@ -1,36 +1,20 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { WorkspaceShell } from "@/components/layout/workspace-shell";
 import { DashboardMetrics } from "@/components/dashboard/dashboard-metrics";
-
+import { PageHeader, SectionHeader } from "@/components/ui/primitives";
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (user.forcePasswordChange) redirect("/change-password");
-
-  return (
-    <WorkspaceShell user={user}>
-      <div className="mb-8">
-        <p className="text-sm font-medium text-brand-600">Company Workspace</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-ink">Good to see you, {user.fullName.split(" ")[0]}</h1>
-        <p className="mt-2 text-slate">Phase 0 foundation is ready. Business modules will be added phase by phase.</p>
-      </div>
-      <DashboardMetrics />
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        {[
-          ["Authentication", "Secure session foundation", "Ready"],
-          ["Access control", "Data-driven permissions", "Ready"],
-          ["Storage", "MinIO integration", "Deferred"],
-        ].map(([title, description, status]) => (
-          <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" key={title}>
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="font-semibold text-ink">{title}</h2>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status === "Ready" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{status}</span>
-            </div>
-            <p className="mt-3 text-sm text-slate">{description}</p>
-          </article>
-        ))}
-      </div>
-    </WorkspaceShell>
-  );
+  return <WorkspaceShell user={user}>
+    <PageHeader eyebrow="01 / Overview" title="A clearer view of your business." description={`Welcome back, ${user.fullName.split(" ")[0]}. From first conversations to delivery, keep the work that matters in view.`} action={<Link className="button button-primary" href="/leads">Open pipeline <span aria-hidden="true">↗</span></Link>} />
+    <SectionHeader title="Business at a glance" meta="Current snapshot" /><DashboardMetrics />
+    <section className="section"><SectionHeader title="Move the work forward" meta="Your workspace" /><div className="route-grid">{[
+      ["01 / Relationships", "Build the next connection.", "Follow conversations, nurture opportunities, and grow client relationships.", "/clients"],
+      ["02 / Delivery", "Keep progress visible.", "Connect projects to the people, tasks, and milestones behind them.", "/projects"],
+      ["03 / Operations", "Know where things stand.", "Review registered servers, service states, and demo environments.", "/infrastructure"],
+    ].map(([label, title, description, href]) => <Link className="route-card" href={href} key={href}><p className="eyebrow">{label} <span aria-hidden="true">↗</span></p><h3>{title}</h3><p>{description}</p></Link>)}</div></section>
+  </WorkspaceShell>;
 }
