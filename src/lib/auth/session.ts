@@ -40,7 +40,12 @@ export async function revokeCurrentSession(): Promise<void> {
   cookieStore.delete(SESSION_COOKIE);
 }
 
-export async function getCurrentUser(): Promise<(Pick<User, "id" | "fullName" | "email" | "status"> & { role: { id: string; name: string } }) | null> {
+export type CurrentUser = Pick<User, "id" | "fullName" | "email" | "status"> & {
+  role: { id: string; name: string };
+  forcePasswordChange: boolean;
+};
+
+export async function getCurrentUser(): Promise<CurrentUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -49,7 +54,16 @@ export async function getCurrentUser(): Promise<(Pick<User, "id" | "fullName" | 
     where: { sessionTokenHash: hashToken(token), revokedAt: null, expiresAt: { gt: new Date() }, user: { status: "ACTIVE" } },
     include: { user: { include: { role: true } } },
   });
-  const user = session?.user ? { id: session.user.id, fullName: session.user.fullName, email: session.user.email, status: session.user.status, role: { id: session.user.role.id, name: session.user.role.name } } : null;
+  const user = session?.user
+    ? {
+        id: session.user.id,
+        fullName: session.user.fullName,
+        email: session.user.email,
+        status: session.user.status,
+        role: { id: session.user.role.id, name: session.user.role.name },
+        forcePasswordChange: session.user.forcePasswordChange,
+      }
+    : null;
   if (user) {
     await prisma.session.updateMany({ where: { sessionTokenHash: hashToken(token) }, data: { lastSeenAt: new Date() } });
   }

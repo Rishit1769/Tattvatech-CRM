@@ -24,7 +24,12 @@ export function LoginForm() {
         setError(response.status === 401 ? "Invalid email or password." : "Unable to sign in right now.");
         return;
       }
-      router.push("/dashboard");
+      const data = await response.json();
+      if (data.forcePasswordChange) {
+        router.push("/change-password");
+      } else {
+        router.push("/dashboard");
+      }
       router.refresh();
     } catch {
       setError("Unable to reach the server. Try again.");

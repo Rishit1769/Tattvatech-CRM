@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     }
     await createSession(String(user.id));
     await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, forcePasswordChange: user.forcePasswordChange });
   } catch (error) {
     if (error instanceof SyntaxError) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     if (error && typeof error === "object" && "name" in error && error.name === "ZodError") return NextResponse.json({ error: "Invalid request" }, { status: 400 });
