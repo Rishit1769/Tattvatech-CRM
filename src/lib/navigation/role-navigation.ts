@@ -18,7 +18,7 @@ const projectItems: RoleNavItem[] = [
   { label: "Planning", href: "/roles/cto/projects?lifecycle=PLANNING", permission: "project.view_all" },
   { label: "Development", href: "/roles/cto/projects?lifecycle=DEVELOPMENT", permission: "project.view_all" },
   { label: "Testing", href: "/roles/cto/projects?lifecycle=TESTING", permission: "project.view_all" },
-  { label: "Deployment", href: "/roles/cto/projects?lifecycle=DEPLOYMENT", permission: "project.view_all" },
+  { label: "Deployment", href: "/roles/cto/projects?lifecycle=DEPLOYED", permission: "project.view_all" },
   { label: "Payment Pending", href: "/roles/cto/projects?payment=PENDING", permission: "project.payment_status.view" },
   { label: "Payment Received", href: "/roles/cto/projects?payment=PAID", permission: "project.payment_status.view" },
 ];

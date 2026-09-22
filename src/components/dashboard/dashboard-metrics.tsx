@@ -17,7 +17,7 @@ export function DashboardMetrics() {
     ["Planning", data.lifecycle.planning, "Project lifecycle", "/projects"],
     ["Development", data.lifecycle.development, "Project lifecycle", "/projects"],
     ["Testing", data.lifecycle.testing, "Project lifecycle", "/projects"],
-    ["Deployment", data.lifecycle.deployment, "Deployment-stage projects", "/projects?lifecycle=DEPLOYMENT"],
+    ["Deployment", data.lifecycle.deployment, "Deployment-stage projects", "/projects?lifecycle=DEPLOYED"],
     ["Deployed", data.lifecycle.deployed, "Live project records", "/projects"],
     ["Payment pending", data.lifecycle.paymentPending, "Awaiting finance confirmation", "/projects?payment=PENDING"],
     ["Payment received", data.lifecycle.paymentReceived, "Paid project records", "/projects?payment=PAID"],
