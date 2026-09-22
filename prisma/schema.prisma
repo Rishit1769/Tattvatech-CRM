@@ -43,6 +43,12 @@ enum ProjectStatus {
   COMPLETED
   CANCELLED
 }
+enum ProjectLifecycleStatus {
+  PLANNING
+  DEVELOPMENT
+  TESTING
+  DEPLOYED
+}
 enum TaskStatus {
   BACKLOG
   TODO
@@ -174,6 +180,8 @@ model User {
   projectMemberships ProjectMember[]
   mentoredProjectMembers ProjectMember[] @relation("ProjectMentor")
   ownedModules ProjectModule[] @relation("ModuleOwner")
+  projectStatusChanges ProjectStatusHistory[]
+  deployments Deployment[] @relation("DeploymentActor")
   @@index([roleId])
   @@index([status])
   @@map("users")
@@ -423,6 +431,7 @@ model Project {
   type                  String?       @db.VarChar(100)
   description           String?       @db.Text
   status                ProjectStatus @default(PLANNING)
+  lifecycleStatus       ProjectLifecycleStatus @default(PLANNING) @map("lifecycle_status")
   priority              TaskPriority  @default(MEDIUM)
   projectOwnerUserId    String?       @map("project_owner_user_id") @db.Char(36)
   managerUserId         String?       @map("manager_user_id") @db.Char(36)
@@ -457,8 +466,48 @@ model Project {
   transactions          Transaction[]
   invoices              Invoice[]
   amcs                  AmcContract[]
+  statusHistory         ProjectStatusHistory[]
+  deployments           Deployment[]
   @@index([clientId, status])
   @@map("projects")
+}
+
+model ProjectStatusHistory {
+  id             String                @id @default(uuid()) @db.Char(36)
+  projectId      String                @map("project_id") @db.Char(36)
+  previousStatus ProjectLifecycleStatus? @map("previous_status")
+  newStatus      ProjectLifecycleStatus  @map("new_status")
+  changedById    String                @map("changed_by") @db.Char(36)
+  note           String?               @db.Text
+  changedAt      DateTime              @default(now()) @map("changed_at")
+  project        Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  changedBy      User                  @relation(fields: [changedById], references: [id])
+  @@index([projectId, changedAt])
+  @@map("project_status_history")
+}
+
+model Deployment {
+  id                  String   @id @default(uuid()) @db.Char(36)
+  projectId           String   @map("project_id") @db.Char(36)
+  environment         String   @db.VarChar(30)
+  status              String   @default("PENDING") @db.VarChar(30)
+  deploymentUrl       String?  @map("deployment_url") @db.VarChar(500)
+  serverId            String?  @map("server_id") @db.Char(36)
+  version             String?  @db.VarChar(120)
+  commitReference     String?  @map("commit_reference") @db.VarChar(160)
+  deployedById        String?  @map("deployed_by") @db.Char(36)
+  deployedAt          DateTime? @map("deployed_at")
+  healthStatus        String?  @map("health_status") @db.VarChar(30)
+  lastHealthCheckAt   DateTime? @map("last_health_check_at")
+  notes               String?  @db.Text
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  server              Server?  @relation(fields: [serverId], references: [id], onDelete: SetNull)
+  deployedBy          User?    @relation("DeploymentActor", fields: [deployedById], references: [id], onDelete: SetNull)
+  @@index([projectId, environment, createdAt])
+  @@index([status, healthStatus])
+  @@map("deployments")
 }
 
 model Task {
@@ -753,6 +802,7 @@ model Server {
   services       Service[]
   metrics        ServerMetric[]
   incidents      Incident[]
+  deployments    Deployment[]
   @@map("servers")
 }
 

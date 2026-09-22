@@ -112,6 +112,14 @@ a { text-underline-offset: 4px; }
 .field { display: grid; gap: 8px; font-size: 12px; font-weight: 500; }
 .field-hint { font-weight: 400; color: var(--foreground-muted); }
 .input { display: block; width: 100%; min-width: 0; min-height: 44px; background: var(--surface); padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius); color: var(--foreground); font-size: 14px; font-weight: 400; }
+.password-field { position: relative; display: block; }
+.password-input { padding-right: 48px; }
+.password-toggle { position: absolute; top: 50%; right: 8px; display: grid; width: 34px; height: 34px; place-items: center; transform: translateY(-50%); color: var(--foreground-muted); border-radius: 999px; }
+.password-toggle:hover { background: var(--surface-hover); color: var(--foreground); }
+.password-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.lifecycle-track { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; }
+.lifecycle-track span { border-top: 3px solid color-mix(in srgb, var(--foreground-muted) 28%, transparent); padding-top: .65rem; color: var(--foreground-muted); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
+.lifecycle-track span.is-complete { border-color: var(--accent); color: var(--foreground); }
 .input:hover { border-color: var(--foreground-muted); }
 .input:focus { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
 .input:disabled { opacity: .6; cursor: not-allowed; }

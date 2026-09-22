@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useResource } from "@/components/ui/resource";
 import { Button, LoadingSkeleton, Notice, money } from "@/components/ui/primitives";
-type Metrics = { activeLeads: number; pipelineValue: string | null; activeProjects: number; received: string | null; openIncidents: number; runningDemos: number };
+type Metrics = { activeLeads: number; pipelineValue: string | null; activeProjects: number; received: string | null; openIncidents: number; runningDemos: number; lifecycle: { planning: number; development: number; testing: number; deployed: number } };
 export function DashboardMetrics() {
   const { data, loading, error, reload } = useResource<Metrics>("/api/dashboard/summary");
   if (loading) return <div className="metric-grid">{Array.from({ length: 6 }, (_, i) => <div className="metric" key={i}><LoadingSkeleton rows={1} /></div>)}</div>;
@@ -14,6 +14,10 @@ export function DashboardMetrics() {
     ["Received · all time", money(data.received), "View transactions", "/finance"],
     ["Open incidents", data.openIncidents, "View infrastructure", "/infrastructure"],
     ["Active demo requests", data.runningDemos, "Requested, starting & running", "/infrastructure/demos"],
+    ["Planning", data.lifecycle.planning, "Project lifecycle", "/projects"],
+    ["Development", data.lifecycle.development, "Project lifecycle", "/projects"],
+    ["Testing", data.lifecycle.testing, "Project lifecycle", "/projects"],
+    ["Deployed", data.lifecycle.deployed, "Live project records", "/projects"],
   ];
   return <div className="metric-grid">{metrics.map(([label, value, hint, href], index) => <article className="metric" key={String(label)}><div className="metric-top"><span className="mono">{String(index + 1).padStart(2, "0")}</span><h3 className="eyebrow">{label}</h3></div><p className="metric-value">{value}</p><Link href={String(href)}>{hint}<span aria-hidden="true">↗</span></Link></article>)}</div>;
 }
