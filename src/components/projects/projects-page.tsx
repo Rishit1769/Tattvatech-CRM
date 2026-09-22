@@ -19,6 +19,7 @@ export function ProjectsPage() {
       { label: "Project", render: (project) => <><Link className="record-title" href={`/projects/${project.id}`}>{project.name}</Link><p className="record-meta mono">{project.projectCode} · {project.family?.name ?? "Uncategorized"}</p></> },
       { label: "Client / work", render: (project) => <><p>{project.client?.name ?? "Internal product"}</p><p className="record-meta">{project._count.tasks} tasks · {project._count.members} members · {project._count.modules} modules</p></> },
       { label: "Lifecycle", render: (project) => <><StatusBadge status={project.lifecycleStatus} /><p className="record-meta mt-2">Delivery: {project.status.replaceAll("_", " ")}</p></> },
+      { label: "Actions", render: (project) => <Link className="button button-secondary" href={`/projects/${project.id}`}>View</Link> },
     ]}
     form={(reload) => <CreateForm title="New project" endpoint="/api/projects" payload={() => ({ ...form, familyId: form.familyId || undefined, clientId: form.clientId || undefined, dealValue: form.dealValue ? Number(form.dealValue) : undefined })} reset={() => setForm(empty)} reload={reload} submitLabel="Create project ↗">
       {clients.error && <Notice>{clients.error}</Notice>}

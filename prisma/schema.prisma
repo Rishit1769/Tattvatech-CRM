@@ -186,6 +186,7 @@ model User {
   technicalProjects Project[]   @relation("ProjectTechnicalOwner")
   createdProjects Project[]     @relation("ProjectCreator")
   projectMemberships ProjectMember[]
+  assignedProjectMembers ProjectMember[] @relation("ProjectMemberAssigner")
   mentoredProjectMembers ProjectMember[] @relation("ProjectMentor")
   ownedModules ProjectModule[] @relation("ModuleOwner")
   projectStatusChanges ProjectStatusHistory[]
@@ -568,6 +569,7 @@ model ProjectMember {
   userId         String   @map("user_id") @db.Char(36)
   projectRole    String   @map("project_role") @db.VarChar(80)
   mentorUserId   String?  @map("mentor_user_id") @db.Char(36)
+  assignedById   String?  @map("assigned_by") @db.Char(36)
   joinedAt       DateTime @default(now()) @map("joined_at")
   expectedEndAt  DateTime? @map("expected_end_at")
   leftAt         DateTime? @map("left_at")
@@ -577,6 +579,7 @@ model ProjectMember {
   project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   mentor         User?    @relation("ProjectMentor", fields: [mentorUserId], references: [id])
+  assignedBy     User?    @relation("ProjectMemberAssigner", fields: [assignedById], references: [id], onDelete: SetNull)
   @@unique([projectId, userId])
   @@index([userId, status])
   @@map("project_members")

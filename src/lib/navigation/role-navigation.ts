@@ -14,13 +14,13 @@ export type RoleNavDefinition = {
 };
 
 const projectItems: RoleNavItem[] = [
-  { label: "All Projects", href: "/projects", permission: "project.view" },
-  { label: "Planning", href: "/projects?lifecycle=PLANNING", permission: "project.view" },
-  { label: "Development", href: "/projects?lifecycle=DEVELOPMENT", permission: "project.view" },
-  { label: "Testing", href: "/projects?lifecycle=TESTING", permission: "project.view" },
-  { label: "Deployment", href: "/projects?lifecycle=DEPLOYMENT", permission: "project.view" },
-  { label: "Payment Pending", href: "/projects?payment=PENDING", permission: "project.payment_status.view" },
-  { label: "Payment Received", href: "/projects?payment=PAID", permission: "project.payment_status.view" },
+  { label: "All Projects", href: "/roles/cto/projects", permission: "project.view_all" },
+  { label: "Planning", href: "/roles/cto/projects?lifecycle=PLANNING", permission: "project.view_all" },
+  { label: "Development", href: "/roles/cto/projects?lifecycle=DEVELOPMENT", permission: "project.view_all" },
+  { label: "Testing", href: "/roles/cto/projects?lifecycle=TESTING", permission: "project.view_all" },
+  { label: "Deployment", href: "/roles/cto/projects?lifecycle=DEPLOYMENT", permission: "project.view_all" },
+  { label: "Payment Pending", href: "/roles/cto/projects?payment=PENDING", permission: "project.payment_status.view" },
+  { label: "Payment Received", href: "/roles/cto/projects?payment=PAID", permission: "project.payment_status.view" },
 ];
 
 export const roleNavigation: RoleNavDefinition[] = [
@@ -57,6 +57,7 @@ export const roleNavigation: RoleNavDefinition[] = [
     landing: "/roles/finance",
     items: [
       { label: "Finance Overview", href: "/roles/finance", permission: "finance.view" },
+      { label: "Projects", children: [{ label: "All Projects", href: "/projects", permission: "project.view_all" }, { label: "Create Project", href: "/finance/projects/create", permission: "finance.project.create" }] },
       { label: "Transactions", href: "/finance/transactions", permission: "finance.transaction.view" },
       { label: "Invoice Generation", href: "/finance/invoices", permission: "finance.invoice.create" },
       { label: "Final Quotations", href: "/finance/quotations", permission: "finance.quotation.view" },
@@ -96,14 +97,14 @@ export const roleNavigation: RoleNavDefinition[] = [
     label: "Employee",
     aliases: ["EMPLOYEE"],
     landing: "/roles/employee",
-    items: [{ label: "My Work", href: "/roles/employee", permission: "dashboard.view" }, { label: "My Projects", href: "/projects", permission: "project.view_assigned" }, { label: "My Tasks", href: "/roles/employee", permission: "task.view" }, { label: "Meetings", href: "/meetings", permission: "meeting.view" }, { label: "Documents", href: "/roles/employee", permission: "project.implementation.view" }],
+    items: [{ label: "My Work", href: "/roles/employee", permission: "dashboard.view" }, { label: "My Projects", href: "/roles/employee/my-projects", permission: "project.view_assigned" }, { label: "My Tasks", href: "/roles/employee", permission: "task.view" }, { label: "Meetings", href: "/meetings", permission: "meeting.view" }, { label: "Documents", href: "/roles/employee", permission: "project.implementation.view" }],
   },
   {
     key: "INTERN",
     label: "Intern",
     aliases: ["INTERN"],
     landing: "/roles/intern",
-    items: [{ label: "My Work", href: "/roles/intern", permission: "dashboard.view" }, { label: "My Tasks", href: "/roles/intern", permission: "task.view" }, { label: "My Projects", href: "/projects", permission: "project.view_assigned" }, { label: "Documents", href: "/roles/intern", permission: "project.implementation.view" }],
+    items: [{ label: "My Work", href: "/roles/intern", permission: "dashboard.view" }, { label: "My Tasks", href: "/roles/intern", permission: "task.view" }, { label: "My Projects", href: "/roles/intern/my-projects", permission: "project.view_assigned" }, { label: "Documents", href: "/roles/intern", permission: "project.implementation.view" }],
   },
 ];
 
