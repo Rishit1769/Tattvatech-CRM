@@ -3,37 +3,28 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { roleNavigation, rolesForUser, type RoleNavItem } from "@/lib/navigation/role-navigation";
 
-const navigation = [
-  ["Overview", "/dashboard"], ["Leads", "/leads"], ["Clients", "/clients"], ["Projects", "/projects"], ["Meetings", "/meetings"], ["Follow-ups", "/follow-ups"], ["Infrastructure", "/infrastructure"],
-];
-type WorkspaceUser = { fullName: string; role: { name: string }; roles: string[]; department: string | null; financeAccess: boolean };
+const navigation = [["Dashboard", "/dashboard", "dashboard.view"], ["Sales & CRM", "/leads", "lead.view"], ["Projects", "/projects", "project.view"], ["Finance", "/finance", "finance.view"], ["Infrastructure", "/infrastructure", "infrastructure.view"], ["Workspace", "/workspace/search", "activity.view"]] as const;
+type WorkspaceUser = { fullName: string; role: { name: string }; roles: string[]; permissions: string[]; department: string | null; financeAccess: boolean };
+function canSee(item: RoleNavItem, permissions: Set<string>) { return !item.permission || permissions.has(item.permission); }
+function isCurrent(href: string | undefined, pathname: string) { return Boolean(href && (pathname === href || (href !== "/dashboard" && pathname.startsWith(href.split("?")[0])))); }
+function RoleItem({ item, pathname, permissions, depth = 0, onNavigate }: { item: RoleNavItem; pathname: string; permissions: Set<string>; depth?: number; onNavigate: () => void }) {
+  const visibleChildren = item.children?.filter((child) => canSee(child, permissions)) ?? [];
+  const active = isCurrent(item.href, pathname) || visibleChildren.some((child) => isCurrent(child.href, pathname));
+  const [expanded, setExpanded] = useState(active);
+  useEffect(() => { if (active) setExpanded(true); }, [active]);
+  if (!canSee(item, permissions)) return null;
+  if (!visibleChildren.length && item.href) return <Link className={`nav-child nav-depth-${depth} ${active ? "is-active" : ""}`} href={item.href} aria-current={active ? "page" : undefined} onClick={onNavigate}>{item.label}</Link>;
+  return <div className="nav-nested"><button className={`nav-category nav-depth-${depth} ${active ? "is-active" : ""}`} type="button" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}><span>{item.label}</span><span aria-hidden="true">{expanded ? "▾" : "▸"}</span></button>{expanded && <div className="nav-children">{visibleChildren.map((child) => <RoleItem key={`${item.label}-${child.label}`} item={child} pathname={pathname} permissions={permissions} depth={depth + 1} onNavigate={onNavigate} />)}</div>}</div>;
+}
 export function WorkspaceFrame({ user, children }: { user: WorkspaceUser; children: ReactNode }) {
-  const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [financeOpen, setFinanceOpen] = useState(pathname.startsWith("/finance"));
-  const menuRef = useRef<HTMLButtonElement>(null);
-  const current = navigation.find(([, href]) => href === pathname)?.[0] ?? "Workspace";
-  useEffect(() => {
-    const update = () => {
-      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0);
-    };
-    update(); window.addEventListener("scroll", update, { passive: true }); window.addEventListener("resize", update);
-    return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
-  }, [pathname]);
-  useEffect(() => { if (pathname.startsWith("/finance")) setFinanceOpen(true); }, [pathname]);
-  return <div className="workspace">
-    <div className="scroll-progress gradient-sunset" style={{ width: `${progress}%` }} aria-hidden="true" />
-    <a href="#main-content" className="skip-link">Skip to content</a>
-    <aside className="sidebar" onKeyDown={(event) => { if (event.key === "Escape" && open) { setOpen(false); menuRef.current?.focus(); } }}>
-      <div className="brand-row"><Link className="brand" href="/dashboard" aria-label="TattvaTech workspace"><img className="brand-logo" src="/Logo.png" alt="TattvaTech" /><p className="eyebrow">Company workspace</p></Link><button ref={menuRef} className="button button-secondary mobile-menu" aria-expanded={open} aria-controls="workspace-navigation" onClick={() => setOpen(!open)}>{open ? "Close" : "Menu"}</button></div>
-      <div id="workspace-navigation" className={`sidebar-content ${open ? "is-open" : ""}`}>
-        <nav aria-label="Primary navigation"><p className="eyebrow nav-group">Workspace</p>{navigation.map(([label, href], index) => <Link key={href} className="nav-item" href={href} aria-current={pathname === href ? "page" : undefined} onClick={() => setOpen(false)}><span className="mono" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>{label}</Link>)}{user.financeAccess && <div className="nav-group-wrap"><Link className={`nav-item ${pathname.startsWith("/finance") ? "is-active" : ""}`} href="/finance" aria-current={pathname === "/finance" ? "page" : undefined} aria-expanded={financeOpen} onClick={() => { setFinanceOpen(true); setOpen(false); }}><span className="mono" aria-hidden="true">05</span><span className="nav-chevron" aria-hidden="true">{financeOpen ? "▾" : "▸"}</span>Finance</Link>{financeOpen && <div className="nav-children"><Link className="nav-child" href="/finance/invoices" aria-current={pathname === "/finance/invoices" ? "page" : undefined} onClick={() => setOpen(false)}>Invoice Generation</Link><Link className="nav-child" href="/finance/quotations" aria-current={pathname === "/finance/quotations" ? "page" : undefined} onClick={() => setOpen(false)}>Final Quotation</Link><Link className="nav-child" href="/finance/transactions" aria-current={pathname === "/finance/transactions" ? "page" : undefined} onClick={() => setOpen(false)}>Add Transaction</Link></div>}</div>}</nav>
-        <div className="account"><div className="account-details"><p className="record-title">{user.fullName}</p><p className="record-meta">{user.roles.length ? user.roles.join(" · ") : user.role.name}</p>{user.department && <p className="record-meta">{user.department}</p>}</div><LogoutButton /></div>
-      </div>
-    </aside>
-    <div className="workspace-content"><header className="topbar"><p className="eyebrow">Workspace <span aria-hidden="true">/</span> {current}</p></header><main className="workspace-main" id="main-content" tabIndex={-1}>{children}<footer className="workspace-footer"><span>TattvaTech / Internal workspace</span><span>Engineered with purpose.</span></footer></main></div>
-  </div>;
+  const pathname = usePathname(); const [open, setOpen] = useState(false); const [progress, setProgress] = useState(0); const menuRef = useRef<HTMLButtonElement>(null); const permissions = new Set(user.permissions); const assignedRoles = rolesForUser(user.roles);
+  const [expandedRoles, setExpandedRoles] = useState<string[]>([]);
+  useEffect(() => { try { const stored = JSON.parse(sessionStorage.getItem("tattvatech-expanded-roles") ?? "[]") as string[]; setExpandedRoles(stored); } catch { /* storage can be unavailable */ } }, []);
+  useEffect(() => { try { sessionStorage.setItem("tattvatech-expanded-roles", JSON.stringify(expandedRoles)); } catch { /* storage can be unavailable */ } }, [expandedRoles]);
+  useEffect(() => { const active = assignedRoles.find((role) => role.items.some((item) => isCurrent(item.href, pathname)) || pathname.startsWith(role.landing)); if (active && !expandedRoles.includes(active.key)) setExpandedRoles((roles) => [...roles, active.key]); }, [pathname, assignedRoles, expandedRoles]);
+  useEffect(() => { const update = () => { const scrollable = document.documentElement.scrollHeight - window.innerHeight; setProgress(scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0); }; update(); window.addEventListener("scroll", update, { passive: true }); window.addEventListener("resize", update); return () => { window.removeEventListener("scroll", update); window.removeEventListener("resize", update); }; }, [pathname]);
+  const toggleRole = (key: string) => setExpandedRoles((roles) => roles.includes(key) ? roles.filter((role) => role !== key) : [...roles, key]);
+  return <div className="workspace"><div className="scroll-progress gradient-sunset" style={{ width: `${progress}%` }} aria-hidden="true" /><a href="#main-content" className="skip-link">Skip to content</a><aside className="sidebar" onKeyDown={(event) => { if (event.key === "Escape" && open) { setOpen(false); menuRef.current?.focus(); } }}><div className="brand-row"><Link className="brand" href="/dashboard" aria-label="TattvaTech workspace"><img className="brand-logo" src="/Logo.png" alt="TattvaTech" /><p className="eyebrow">Company workspace</p></Link><button ref={menuRef} className="button button-secondary mobile-menu" aria-expanded={open} aria-controls="workspace-navigation" onClick={() => setOpen(!open)}>{open ? "Close" : "Menu"}</button></div><div id="workspace-navigation" className={`sidebar-content ${open ? "is-open" : ""}`}><nav aria-label="Primary navigation"><p className="eyebrow nav-group">Workspace</p>{navigation.map(([label, href, permission], index) => permissions.has(permission) && <Link key={href} className={`nav-item ${isCurrent(href, pathname) ? "is-active" : ""}`} href={href} aria-current={isCurrent(href, pathname) ? "page" : undefined} onClick={() => setOpen(false)}><span className="mono" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>{label}</Link>)}<p className="eyebrow nav-group role-heading">Roles</p>{assignedRoles.map((role) => <div className="role-group" key={role.key}><button className={`nav-role ${pathname.startsWith(role.landing) || role.items.some((item) => isCurrent(item.href, pathname)) ? "is-active" : ""}`} type="button" aria-expanded={expandedRoles.includes(role.key)} onClick={() => toggleRole(role.key)}><span aria-hidden="true">{expandedRoles.includes(role.key) ? "▼" : "▶"}</span><span>{role.label}</span></button>{expandedRoles.includes(role.key) && <div className="role-children"><Link className="nav-child nav-role-landing" href={role.landing} aria-current={pathname === role.landing ? "page" : undefined} onClick={() => setOpen(false)}>{role.items[0]?.label ?? `${role.label} Overview`}</Link>{role.items.slice(1).map((item) => <RoleItem key={item.label} item={item} pathname={pathname} permissions={permissions} onNavigate={() => setOpen(false)} />)}</div>}</div>)}<p className="eyebrow nav-group">Company</p>{permissions.has("settings.view") && <Link className="nav-item" href="/roles/hr">Settings</Link>}</nav><div className="account"><div className="account-details"><p className="record-title">{user.fullName}</p><p className="record-meta">{user.roles.length ? user.roles.join(" · ") : user.role.name}</p>{user.department && <p className="record-meta">{user.department}</p>}</div><LogoutButton /></div></div></aside><div className="workspace-content"><header className="topbar"><p className="eyebrow">Workspace <span aria-hidden="true">/</span> {pathname === "/dashboard" ? "Dashboard" : "Workspace"}</p></header><main className="workspace-main" id="main-content" tabIndex={-1}>{children}<footer className="workspace-footer"><span>TattvaTech / Internal workspace</span><span>Engineered with purpose.</span></footer></main></div></div>;
 }

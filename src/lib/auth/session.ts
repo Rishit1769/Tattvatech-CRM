@@ -45,6 +45,7 @@ export type CurrentUser = Pick<User, "id" | "fullName" | "email" | "status"> & {
   roles: string[];
   department: string | null;
   financeAccess: boolean;
+  permissions: string[];
   forcePasswordChange: boolean;
 };
 
@@ -66,6 +67,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
         role: { id: session.user.role.id, name: session.user.role.name },
         roles: [...new Map([[session.user.role.name, session.user.role.displayPriority], ...session.user.userRoles.map((assignment) => [assignment.role.name, assignment.role.displayPriority] as const)]).entries()].sort((a, b) => b[1] - a[1]).map(([name]) => name),
         department: session.user.department?.name ?? null,
+        permissions: [...new Set([...session.user.role.permissions, ...session.user.userRoles.flatMap((assignment) => assignment.role.permissions)].map((item) => item.permission.key))],
         financeAccess: [...session.user.role.permissions, ...session.user.userRoles.flatMap((assignment) => assignment.role.permissions)].some((item) => item.permission.key === "finance.view"),
         forcePasswordChange: session.user.forcePasswordChange,
       }
