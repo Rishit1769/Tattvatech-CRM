@@ -18,7 +18,9 @@ const projectItems: RoleNavItem[] = [
   { label: "Planning", href: "/projects?lifecycle=PLANNING", permission: "project.view" },
   { label: "Development", href: "/projects?lifecycle=DEVELOPMENT", permission: "project.view" },
   { label: "Testing", href: "/projects?lifecycle=TESTING", permission: "project.view" },
-  { label: "Deployed", href: "/projects?lifecycle=DEPLOYED", permission: "project.view" },
+  { label: "Deployment", href: "/projects?lifecycle=DEPLOYMENT", permission: "project.view" },
+  { label: "Payment Pending", href: "/projects?payment=PENDING", permission: "project.payment_status.view" },
+  { label: "Payment Received", href: "/projects?payment=PAID", permission: "project.payment_status.view" },
 ];
 
 export const roleNavigation: RoleNavDefinition[] = [
@@ -30,7 +32,7 @@ export const roleNavigation: RoleNavDefinition[] = [
     items: [
       { label: "Executive Overview", href: "/roles/ceo", permission: "dashboard.view" },
       { label: "Business", children: [{ label: "Leads", href: "/leads", permission: "lead.view" }, { label: "Clients", href: "/clients", permission: "client.view" }] },
-      { label: "Projects", children: [{ label: "Project Overview", href: "/projects", permission: "project.view_all" }, { label: "Deployed Projects", href: "/projects?lifecycle=DEPLOYED", permission: "project.view_all" }] },
+      { label: "Projects", children: [{ label: "Project Overview", href: "/projects", permission: "project.view_all" }, { label: "Deployed Projects", href: "/projects?lifecycle=DEPLOYMENT", permission: "project.view_all" }] },
       { label: "Finance", children: [{ label: "Financial Overview", href: "/finance", permission: "finance.view" }, { label: "Transactions", href: "/finance/transactions", permission: "finance.transaction.view" }, { label: "Invoices", href: "/finance/invoices", permission: "finance.invoice.view" }] },
       { label: "Operations", children: [{ label: "Meetings", href: "/meetings", permission: "meeting.view" }, { label: "Follow-ups", href: "/follow-ups", permission: "follow_up.view" }] },
     ],

@@ -6,10 +6,14 @@ import { apiError, unknownApiError } from "@/lib/api/response";
 import { projectCreateSchema } from "@/lib/validation/crm";
 import { projectVisibilityWhere } from "@/lib/projects/access";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const user = await requireAnyPermission(["project.view", "project.view_all", "project.view_department", "project.view_assigned"]);
-    const projects = await prisma.project.findMany({ where: await projectVisibilityWhere(user.id), include: { client: true, family: true, department: true, owner: { select: { fullName: true } }, manager: { select: { fullName: true } }, _count: { select: { tasks: true, milestones: true, members: true, modules: true } } }, orderBy: { updatedAt: "desc" }, take: 100 });
+    const query = new URL(request.url).searchParams;
+    const lifecycle = query.get("lifecycle") as "PLANNING" | "DEVELOPMENT" | "TESTING" | "DEPLOYMENT" | "DEPLOYED" | null;
+    const payment = query.get("payment") as "NOT_APPLICABLE" | "PENDING" | "PARTIALLY_PAID" | "PAID" | null;
+    const search = query.get("search")?.trim();
+    const projects = await prisma.project.findMany({ where: { AND: [await projectVisibilityWhere(user.id), lifecycle ? { lifecycleStatus: lifecycle } : {}, payment ? { paymentStatus: payment } : {}, search ? { OR: [{ name: { contains: search } }, { projectCode: { contains: search } }, { client: { name: { contains: search } } }] } : {}] }, include: { client: true, family: true, department: true, owner: { select: { fullName: true } }, manager: { select: { fullName: true } }, technicalOwner: { select: { fullName: true } }, _count: { select: { tasks: true, milestones: true, members: true, modules: true } } }, orderBy: { updatedAt: "desc" }, take: 100 });
     return NextResponse.json({ projects: projects.map((project) => ({ ...project, dealValue: project.dealValue?.toString() ?? null })) });
   } catch (error) {
     return error instanceof Error && error.message === "UNAUTHENTICATED" ? apiError("Authentication required", 401) : error instanceof Error && error.message === "FORBIDDEN" ? apiError("Forbidden", 403) : apiError("Unable to load projects", 500);

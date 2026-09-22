@@ -47,7 +47,15 @@ enum ProjectLifecycleStatus {
   PLANNING
   DEVELOPMENT
   TESTING
+  DEPLOYMENT
   DEPLOYED
+}
+
+enum ProjectPaymentStatus {
+  NOT_APPLICABLE
+  PENDING
+  PARTIALLY_PAID
+  PAID
 }
 enum TaskStatus {
   BACKLOG
@@ -181,6 +189,7 @@ model User {
   mentoredProjectMembers ProjectMember[] @relation("ProjectMentor")
   ownedModules ProjectModule[] @relation("ModuleOwner")
   projectStatusChanges ProjectStatusHistory[]
+  projectPaymentChanges ProjectPaymentHistory[]
   deployments Deployment[] @relation("DeploymentActor")
   @@index([roleId])
   @@index([status])
@@ -432,6 +441,7 @@ model Project {
   description           String?       @db.Text
   status                ProjectStatus @default(PLANNING)
   lifecycleStatus       ProjectLifecycleStatus @default(PLANNING) @map("lifecycle_status")
+  paymentStatus         ProjectPaymentStatus @default(NOT_APPLICABLE) @map("payment_status")
   priority              TaskPriority  @default(MEDIUM)
   projectOwnerUserId    String?       @map("project_owner_user_id") @db.Char(36)
   managerUserId         String?       @map("manager_user_id") @db.Char(36)
@@ -440,6 +450,8 @@ model Project {
   expectedDeliveryDate  DateTime?     @map("expected_delivery_date") @db.Date
   completedAt           DateTime?     @map("completed_at")
   dealValue             Decimal?      @map("deal_value") @db.Decimal(15, 2)
+  expectedPaymentAmount Decimal?      @map("expected_payment_amount") @db.Decimal(15, 2)
+  paymentDueDate        DateTime?     @map("payment_due_date") @db.Date
   currency              String        @default("INR") @db.Char(3)
   paymentStructureNotes String?       @map("payment_structure_notes") @db.Text
   repositoryUrl         String?       @map("repository_url") @db.VarChar(500)
@@ -468,8 +480,25 @@ model Project {
   amcs                  AmcContract[]
   statusHistory         ProjectStatusHistory[]
   deployments           Deployment[]
+  paymentHistory        ProjectPaymentHistory[]
   @@index([clientId, status])
   @@map("projects")
+}
+
+model ProjectPaymentHistory {
+  id                String              @id @default(uuid()) @db.Char(36)
+  projectId         String              @map("project_id") @db.Char(36)
+  previousStatus    ProjectPaymentStatus? @map("previous_status")
+  newStatus         ProjectPaymentStatus @map("new_status")
+  transactionId     String?             @map("transaction_id") @db.Char(36)
+  changedById       String              @map("changed_by") @db.Char(36)
+  note              String?             @db.Text
+  changedAt         DateTime            @default(now()) @map("changed_at")
+  project           Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  changedBy         User                @relation(fields: [changedById], references: [id])
+  transaction       Transaction?        @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  @@index([projectId, changedAt])
+  @@map("project_payment_history")
 }
 
 model ProjectStatusHistory {
@@ -615,6 +644,7 @@ model Transaction {
   amc               AmcContract?     @relation(fields: [amcId], references: [id])
   invoice           Invoice?
   documents         StoredFile[]
+  paymentHistory    ProjectPaymentHistory[]
   @@index([transactionDate, type])
   @@index([clientId])
   @@index([referenceNumber])

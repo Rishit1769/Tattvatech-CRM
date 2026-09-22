@@ -1,17 +1,20 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { CreateForm, ResourcePage, useResource } from "@/components/ui/resource";
 import { Field, Input, Select, StatusBadge, Notice } from "@/components/ui/primitives";
 type Client = { id: string; name: string };
 type Family = { id: string; code: string; name: string };
-type Project = { id: string; projectCode: string; name: string; status: string; lifecycleStatus: string; projectType: string; family?: Family | null; client?: Client | null; _count: { tasks: number; milestones: number; members: number; modules: number } };
+type Project = { id: string; projectCode: string; name: string; status: string; lifecycleStatus: string; paymentStatus: string; projectType: string; family?: Family | null; client?: Client | null; _count: { tasks: number; milestones: number; members: number; modules: number } };
 const empty = { name: "", familyId: "", clientId: "", projectType: "CLIENT_PROJECT", type: "", dealValue: "", expectedDeliveryDate: "" };
 export function ProjectsPage() {
   const [form, setForm] = useState(empty);
+  const searchParams = useSearchParams();
+  const projectEndpoint = `/api/projects${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
   const clients = useResource<Client[]>("/api/clients", "clients");
   const families = useResource<Family[]>("/api/project-families", "families");
-  return <ResourcePage<Project> eyebrow="04 / Delivery" title="Projects with context." description="Every project has a family, a stable human code, a clear owner, and scoped team access." endpoint="/api/projects" resourceKey="projects" searchText={(project) => `${project.name} ${project.projectCode} ${project.client?.name ?? ""} ${project.status} ${project.lifecycleStatus}`}
+  return <ResourcePage<Project> eyebrow="04 / Delivery" title="Projects with context." description="Every project has a family, a stable human code, a clear owner, and scoped team access." endpoint={projectEndpoint} resourceKey="projects" searchText={(project) => `${project.name} ${project.projectCode} ${project.client?.name ?? ""} ${project.status} ${project.lifecycleStatus} ${project.paymentStatus}`}
     columns={[
       { label: "Project", render: (project) => <><Link className="record-title" href={`/projects/${project.id}`}>{project.name}</Link><p className="record-meta mono">{project.projectCode} · {project.family?.name ?? "Uncategorized"}</p></> },
       { label: "Client / work", render: (project) => <><p>{project.client?.name ?? "Internal product"}</p><p className="record-meta">{project._count.tasks} tasks · {project._count.members} members · {project._count.modules} modules</p></> },

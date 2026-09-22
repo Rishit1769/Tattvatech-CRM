@@ -8,6 +8,7 @@ import { apiError, unknownApiError } from "@/lib/api/response";
 import { transactionCreateSchema } from "@/lib/validation/crm";
 import { env } from "@/lib/config/env";
 import { putPrivateObject, removePrivateObject } from "@/lib/storage/minio";
+import { syncProjectPaymentStatus } from "@/lib/projects/payment";
 
 const allowedDocuments = new Map([["application/pdf", "pdf"], ["image/jpeg", "jpg"], ["image/png", "png"]]);
 function safeFilename(value: string) { return value.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 180) || "supporting-document"; }
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
       }
     } else input = transactionCreateSchema.parse(await request.json());
     if (input.type === "PAYMENT_RECEIVED" && !input.clientId) return apiError("A client is required for received payments");
+    if (input.type === "PAYMENT_RECEIVED" && !(await hasPermission(user.id, "finance.payment.confirm"))) return apiError("You do not have permission to confirm received payments", 403);
     const transactionId = randomUUID();
     const transactionNumber = `TT-TXN-${new Date().getUTCFullYear()}-${Date.now().toString().slice(-6)}`;
     const { generateInvoice: _generateInvoice, ...transactionData } = input;
@@ -47,6 +49,7 @@ export async function POST(request: Request) {
         fileRecord = await prisma.storedFile.create({ data: { entityType: "TRANSACTION", entityId: transaction.id, transactionId: transaction.id, originalFilename: document.filename, objectKey: stored.objectKey, mimeType: document.mimeType, sizeBytes: document.bytes.length, bucketName: stored.bucketName, uploadedById: user.id } });
         await recordActivity({ activityType: "transaction.document_uploaded", actorUserId: user.id, entityType: "file", entityId: fileRecord.id, parentEntityType: "transaction", parentEntityId: transaction.id, summary: `${user.fullName} attached ${document.filename} to ${transaction.transactionNumber}.` });
       }
+      if (transaction.type === "PAYMENT_RECEIVED" && transaction.projectId) await syncProjectPaymentStatus({ projectId: transaction.projectId, transactionId: transaction.id, actorUserId: user.id });
       await recordActivity({ activityType: "transaction.recorded", actorUserId: user.id, entityType: "transaction", entityId: transaction.id, summary: `${user.fullName} recorded ${transaction.type} ${transaction.currency} ${transaction.amount}.` });
       await recordAudit({ actorUserId: user.id, action: "transaction.create", entityType: "transaction", entityId: transaction.id, after: { type: transaction.type, amount: transaction.amount.toString(), documentAttached: Boolean(document) } });
       return NextResponse.json({ transaction, documentAttached: Boolean(document) }, { status: 201 });

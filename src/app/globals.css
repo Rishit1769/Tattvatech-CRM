@@ -97,6 +97,14 @@ a { text-underline-offset: 4px; }
 .nav-category span:last-child { color: var(--orange); }
 .nav-depth-2 { padding-left: 8px; font-size: 11px; }
 .nav-role-landing { font-weight: 600; }
+.project-board { display: grid; grid-template-columns: repeat(6, minmax(190px, 1fr)); gap: 12px; margin-top: 20px; overflow-x: auto; padding-bottom: 8px; }
+.project-board-column { min-height: 220px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: color-mix(in oklab, var(--background-secondary) 70%, transparent); }
+.project-board-column h3 { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.project-board-column h3 span { color: var(--foreground-muted); }
+.project-board-card { display: block; margin-top: 8px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--background); }
+.project-board-card:hover { border-color: var(--orange); transform: translateY(-1px); }
+.project-board-card strong { display: block; margin: 6px 0; }
+.project-board-card p { font-size: 12px; }
 .nav-item[aria-current=page] { background: color-mix(in oklab, var(--orange) 12%, transparent); border-color: color-mix(in oklab, var(--orange) 20%, transparent); color: var(--accent-hover); font-weight: 600; }
 .account { margin-top: auto; padding: 28px 12px 0; }
 .account-details { padding-top: 20px; border-top: 1px solid var(--border); margin-bottom: 14px; overflow-wrap: anywhere; }
