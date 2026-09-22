@@ -18,7 +18,7 @@ export async function GET() {
       prisma.project.count({ where: { AND: [projectScope, { lifecycleStatus: "PLANNING" }] } }),
       prisma.project.count({ where: { AND: [projectScope, { lifecycleStatus: "DEVELOPMENT" }] } }),
       prisma.project.count({ where: { AND: [projectScope, { lifecycleStatus: "TESTING" }] } }),
-      prisma.project.count({ where: { AND: [projectScope, { lifecycleStatus: "DEPLOYMENT" }] } }),
+      prisma.project.count({ where: { AND: [projectScope, { lifecycleStatus: { in: ["DEPLOYMENT", "DEPLOYED"] } }] } }),
       prisma.project.count({ where: { AND: [projectScope, { paymentStatus: { in: ["PENDING", "PARTIALLY_PAID"] } }] } }),
       prisma.project.count({ where: { AND: [projectScope, { paymentStatus: "PAID" }] } }),
       prisma.project.findMany({ where: { AND: [projectScope, { lifecycleStatus: { in: ["DEPLOYMENT", "DEPLOYED"] }, deployments: { some: { status: "ACTIVE" } } }] }, include: { client: true, technicalOwner: { select: { fullName: true } }, deployments: { where: { status: "ACTIVE" }, orderBy: { deployedAt: "desc" }, take: 1 } }, orderBy: { updatedAt: "desc" }, take: 50 }),
